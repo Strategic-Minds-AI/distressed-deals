@@ -1,19 +1,10 @@
 import { motion } from "framer-motion";
 import { Search, ArrowRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import SmartImage from "@/components/common/SmartImage";
-import { FALLBACK_IMAGE } from "@/lib/imageFallback";
 
 export default function Hero() {
   return (
-    <section className="relative h-[360px] sm:h-[440px] overflow-hidden">
-      <SmartImage
-        src={FALLBACK_IMAGE}
-        alt="Distressed investment property"
-        loading="eager"
-        className="absolute inset-0 w-full h-full object-cover"
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/85 via-primary/70 to-primary/90" />
+    <section className="relative gradient-navy overflow-hidden">
       <div
         className="absolute inset-0 opacity-20"
         style={{
@@ -21,15 +12,14 @@ export default function Hero() {
             "radial-gradient(circle at 25% 30%, hsl(38,80%,55%) 0%, transparent 40%), radial-gradient(circle at 80% 75%, hsl(220,45%,28%) 0%, transparent 45%)",
         }}
       />
-
-      <div className="relative h-full flex items-center justify-center px-4 text-center">
+      <div className="relative px-4 py-14 sm:py-20 text-center">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="max-w-3xl"
+          transition={{ duration: 0.6 }}
+          className="max-w-3xl mx-auto"
         >
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur border border-white/20 text-white/90 text-sm px-4 py-1.5 rounded-full mb-6">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur border border-white/20 text-white/90 text-xs sm:text-sm px-4 py-1.5 rounded-full mb-5">
             <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
             Distressed Property Investment Platform
           </div>
