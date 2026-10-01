@@ -1,7 +1,8 @@
-// Distressed-property fallback image — used when an image URL fails to load.
-// A reliable Unsplash photo of a distressed/renovation property.
-export const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1564013799925-ab319b078b8f?w=800&q=70";
+// Distressed-property fallback image — a bundled SVG illustration that always
+// renders (no network dependency), so no deal card or hero ever shows a broken image.
+import FALLBACK_SVG from "@/assets/distressed-house.svg";
+
+export const FALLBACK_IMAGE = FALLBACK_SVG;
 
 // Ensure an images array always has at least one usable entry.
 export function normalizeImages(images) {

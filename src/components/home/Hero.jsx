@@ -2,12 +2,13 @@ import { motion } from "framer-motion";
 import { Search, ArrowRight } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import SmartImage from "@/components/common/SmartImage";
+import { FALLBACK_IMAGE } from "@/lib/imageFallback";
 
 export default function Hero() {
   return (
     <section className="relative h-[90vh] min-h-[600px] overflow-hidden">
       <SmartImage
-        src="https://images.unsplash.com/photo-1564013799919-ab6000e4d27ce?w=1920&q=80"
+        src={FALLBACK_IMAGE}
         alt="Distressed investment property"
         loading="eager"
         className="absolute inset-0 w-full h-full object-cover"
