@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a1a3a"/>
+      <stop offset="100%" stop-color="#0f2445"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#sky)"/>
+  <!-- distant skyline -->
+  <g fill="#13294f" opacity="0.55">
+    <rect x="0" y="250" width="90" height="150"/>
+    <rect x="80" y="220" width="70" height="180"/>
+    <rect x="140" y="270" width="110" height="130"/>
+    <rect x="240" y="235" width="80" height="165"/>
+    <rect x="310" y="255" width="100" height="145"/>
+    <rect x="400" y="225" width="90" height="175"/>
+    <rect x="480" y="260" width="120" height="140"/>
+    <rect x="590" y="240" width="80" height="160"/>
+    <rect x="660" y="265" width="100" height="135"/>
+    <rect x="750" y="230" width="90" height="170"/>
+    <rect x="830" y="255" width="110" height="145"/>
+    <rect x="930" y="235" width="80" height="165"/>
+    <rect x="1000" y="260" width="100" height="140"/>
+    <rect x="1090" y="245" width="110" height="155"/>
+  </g>
+  <!-- foreground houses -->
+  <g fill="#0c1f3f">
+    <!-- house 1 -->
+    <polygon points="40,300 90,250 140,300 140,400 40,400"/>
+    <rect x="78" y="320" width="24" height="40" fill="#1a3a6b"/>
+    <rect x="78" y="320" width="24" height="40" fill="#e8b864" opacity="0.85"/>
+    <!-- house 2 -->
+    <polygon points="180,290 235,240 290,290 290,400 180,400"/>
+    <rect x="220" y="315" width="30" height="50" fill="#e8b864" opacity="0.8"/>
+    <!-- house 3 -->
+    <polygon points="330,295 385,245 440,295 440,400 330,400"/>
+    <rect x="368" y="320" width="34" height="45" fill="#1a3a6b"/>
+    <rect x="368" y="320" width="34" height="45" fill="#e8b864" opacity="0.7"/>
+    <!-- house 4 -->
+    <polygon points="480,285 540,235 600,285 600,400 480,400"/>
+    <rect x="520" y="310" width="36" height="55" fill="#e8b864" opacity="0.85"/>
+    <!-- house 5 -->
+    <polygon points="640,300 695,255 750,300 750,400 640,400"/>
+    <rect x="678" y="325" width="34" height="45" fill="#1a3a6b"/>
+    <rect x="678" y="325" width="34" height="45" fill="#e8b864" opacity="0.75"/>
+    <!-- house 6 -->
+    <polygon points="790,290 850,240 910,290 910,400 790,400"/>
+    <rect x="830" y="315" width="36" height="50" fill="#e8b864" opacity="0.8"/>
+    <!-- house 7 -->
+    <polygon points="950,295 1005,250 1060,295 1060,400 950,400"/>
+    <rect x="988" y="320" width="34" height="45" fill="#1a3a6b"/>
+    <rect x="988" y="320" width="34" height="45" fill="#e8b864" opacity="0.85"/>
+    <!-- house 8 -->
+    <polygon points="1080,300 1130,258 1180,300 1180,400 1080,400"/>
+    <rect x="1115" y="322" width="30" height="40" fill="#e8b864" opacity="0.7"/>
+  </g>
+  <!-- for-sale sign -->
+  <g>
+    <rect x="560" y="300" width="6" height="60" fill="#6b4f2a"/>
+    <rect x="535" y="285" width="56" height="34" fill="#e8b864"/>
+    <text x="563" y="306" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#0c1f3f" text-anchor="middle">FOR SALE</text>
+  </g>
+</svg>
