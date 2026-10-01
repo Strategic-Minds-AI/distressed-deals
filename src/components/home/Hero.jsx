@@ -1,0 +1,60 @@
+import { motion } from "framer-motion";
+import { Search, ArrowRight } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import SmartImage from "@/components/common/SmartImage";
+
+export default function Hero() {
+  return (
+    <section className="relative h-[90vh] min-h-[600px] overflow-hidden">
+      <SmartImage
+        src="https://images.unsplash.com/photo-1564013799919-ab6000e4d27ce?w=1920&q=80"
+        alt="Distressed investment property"
+        loading="eager"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-primary/85 via-primary/70 to-primary/90" />
+      <div
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 25% 30%, hsl(38,80%,55%) 0%, transparent 40%), radial-gradient(circle at 80% 75%, hsl(220,45%,28%) 0%, transparent 45%)",
+        }}
+      />
+
+      <div className="relative h-full flex items-center justify-center px-4 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="max-w-3xl"
+        >
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur border border-white/20 text-white/90 text-sm px-4 py-1.5 rounded-full mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+            Distressed Property Investment Platform
+          </div>
+          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4">
+            Find <span className="text-gold italic">Deep-Discount</span>
+            <br /> Distressed Real Estate
+          </h1>
+          <p className="text-white/85 text-lg font-light mb-8 max-w-2xl mx-auto">
+            Foreclosures, short sales, REOs, auctions, and probate deals — each analyzed with ARV, repair costs, the 70% rule, and projected ROI.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => base44.auth.redirectToLogin("/portal")}
+              className="bg-gold text-primary px-6 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity duration-150 flex items-center justify-center gap-2"
+            >
+              Enter Investor Portal <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => base44.auth.redirectToLogin("/portal/browse")}
+              className="bg-white/10 backdrop-blur border border-white/30 text-white px-6 py-3 rounded-full font-semibold hover:bg-white/20 transition-colors duration-150 flex items-center justify-center gap-2"
+            >
+              <Search className="w-4 h-4" /> Browse Deals
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}

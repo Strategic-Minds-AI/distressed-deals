@@ -1,17 +1,22 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
-  Building2, TrendingUp, Search, ShieldCheck, DollarSign, ArrowRight,
-  AlertTriangle, Wrench, Calculator, Users,
+  Building2, TrendingUp, DollarSign, ArrowRight,
+  AlertTriangle, Calculator, Users,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import DistressedPropertyCard from "@/components/property/DistressedPropertyCard";
 import { formatCurrency } from "@/lib/investment";
+import StickyNav from "@/components/home/StickyNav";
+import Hero from "@/components/home/Hero";
+import TrustBar from "@/components/home/TrustBar";
+import DealTicker from "@/components/home/DealTicker";
+import HowItWorks from "@/components/home/HowItWorks";
+import Testimonials from "@/components/home/Testimonials";
 
 export default function Home() {
   const [featured, setFeatured] = useState([]);
-  const [stats, setStats] = useState({ deals: 0, avgRoi: 0, equity: 0, investors: 0 });
+  const [stats, setStats] = useState({ deals: 0, avgRoi: 0, equity: 0, investors: 18500 });
 
   useEffect(() => {
     async function load() {
@@ -34,45 +39,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <header className="absolute top-0 left-0 right-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-display font-bold text-xl text-white drop-shadow">DistressDeals</span>
-          </div>
-          <button onClick={() => base44.auth.redirectToLogin("/portal")} className="bg-white text-primary px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/90 transition-colors duration-150">
-            Investor Login
-          </button>
-        </div>
-      </header>
-
-      {/* Hero */}
-      <section className="relative h-[88vh] min-h-[560px] overflow-hidden gradient-navy">
-        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, hsl(38,80%,55%) 0%, transparent 45%), radial-gradient(circle at 80% 70%, hsl(220,45%,28%) 0%, transparent 50%)" }} />
-
-        <div className="relative h-full flex items-center justify-center px-4 text-center">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur border border-white/20 text-white/90 text-sm px-4 py-1.5 rounded-full mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
-              Distressed Property Investment Platform
-            </div>
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4">
-              Find <span className="text-gold italic">Deep-Discount</span><br /> Distressed Real Estate
-            </h1>
-            <p className="text-white/80 text-lg font-light mb-8 max-w-2xl mx-auto">
-              Foreclosures, short sales, REOs, auctions, and probate deals — each analyzed with ARV, repair costs, the 70% rule, and projected ROI.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button onClick={() => base44.auth.redirectToLogin("/portal")} className="bg-gold text-primary px-6 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity duration-150 flex items-center justify-center gap-2">
-                Enter Investor Portal <ArrowRight className="w-4 h-4" />
-              </button>
-              <button onClick={() => base44.auth.redirectToLogin("/portal/browse")} className="bg-white/10 backdrop-blur border border-white/30 text-white px-6 py-3 rounded-full font-semibold hover:bg-white/20 transition-colors duration-150 flex items-center justify-center gap-2">
-                <Search className="w-4 h-4" /> Browse Deals
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      <StickyNav />
+      <Hero />
+      <TrustBar />
+      <DealTicker />
 
       {/* Stats */}
       <section className="bg-primary text-white py-10">
@@ -82,7 +52,7 @@ export default function Home() {
             { label: "Avg. Projected ROI", value: `${stats.avgRoi}%`, icon: DollarSign },
             { label: "Total Equity Available", value: formatCurrency(stats.equity), icon: Calculator },
             { label: "Investors Served", value: stats.investors.toLocaleString(), icon: Users },
-          ].map(s => {
+          ].map((s) => {
             const Icon = s.icon;
             return (
               <div key={s.label} className="text-center">
@@ -115,6 +85,8 @@ export default function Home() {
         </section>
       )}
 
+      <HowItWorks />
+
       {/* Value props */}
       <section className="py-14 px-4 bg-muted/50">
         <div className="max-w-7xl mx-auto">
@@ -123,8 +95,8 @@ export default function Home() {
             {[
               { icon: Calculator, title: "Deal Analysis Built-In", desc: "Every listing shows ARV, repair estimates, the 70% rule max offer, projected profit, and ROI — no spreadsheets required." },
               { icon: AlertTriangle, title: "Every Distress Type", desc: "Pre-foreclosures, REOs, short sales, tax liens, auctions, and probate — sourced and verified before listing." },
-              { icon: ShieldCheck, title: "Make Offers Directly", desc: "Submit cash or financed offers through the portal, track status, and manage your entire pipeline in one place." },
-            ].map(f => {
+              { icon: Building2, title: "Make Offers Directly", desc: "Submit cash or financed offers through the portal, track status, and manage your entire pipeline in one place." },
+            ].map((f) => {
               const Icon = f.icon;
               return (
                 <div key={f.title} className="bg-card rounded-2xl border border-border p-6">
@@ -139,6 +111,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <Testimonials />
 
       {/* CTA */}
       <section className="py-16 px-4">

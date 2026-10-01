@@ -146,3 +146,16 @@ html {
   border-radius: 4px;
   background: hsl(38, 80%, 55%);
 }
+
+/* Live deal ticker marquee */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee {
+  animation: marquee 45s linear infinite;
+  width: max-content;
+}
+.marquee:hover {
+  animation-play-state: paused;
+}
