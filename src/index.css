@@ -122,6 +122,17 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Hide scrollbars site-wide while keeping scroll functional */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Custom carousel dots */
 .carousel-dot {
   width: 8px;

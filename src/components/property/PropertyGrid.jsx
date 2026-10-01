@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { Filter, Grid3X3, LayoutList, SlidersHorizontal, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { SlidersHorizontal, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { PROPERTIES } from "../../data/properties";
 import PropertyCard from "./PropertyCard";
+import SwipeableRow from "./SwipeableRow";
 
 const CATEGORIES = ["All", "Penthouse", "Villa", "Loft", "Condo", "Estate", "Townhouse", "Chalet", "House", "Apartment"];
 const SORT_OPTIONS = [
@@ -21,7 +22,6 @@ export default function PropertyGrid({ filters, onSelectProperty, favorites, onT
   const filtered = useMemo(() => {
     let list = [...PROPERTIES];
 
-    // Apply search filters from hero
     if (filters?.type) list = list.filter(p => p.type === filters.type);
     if (filters?.query) {
       const q = filters.query.toLowerCase();
@@ -34,13 +34,9 @@ export default function PropertyGrid({ filters, onSelectProperty, favorites, onT
     if (filters?.minPrice) list = list.filter(p => p.price >= filters.minPrice);
     if (filters?.maxPrice) list = list.filter(p => p.price <= filters.maxPrice);
 
-    // Category filter
     if (category !== "All") list = list.filter(p => p.category === category);
-
-    // Beds filter
     if (beds > 0) list = list.filter(p => p.beds >= beds);
 
-    // Sort
     if (sort === "price_asc") list.sort((a, b) => a.price - b.price);
     else if (sort === "price_desc") list.sort((a, b) => b.price - a.price);
     else if (sort === "sqft_desc") list.sort((a, b) => b.sqft - a.sqft);
@@ -49,8 +45,23 @@ export default function PropertyGrid({ filters, onSelectProperty, favorites, onT
     return list;
   }, [filters, category, sort, beds]);
 
+  // Group into several rows by category
+  const rows = useMemo(() => {
+    if (category !== "All") {
+      return [{ label: category, items: filtered }];
+    }
+    const groups = {};
+    filtered.forEach(p => {
+      if (!groups[p.category]) groups[p.category] = [];
+      groups[p.category].push(p);
+    });
+    // Keep a stable, curated order
+    const order = CATEGORIES.filter(c => c !== "All" && groups[c]?.length);
+    return order.map(label => ({ label, items: groups[label] }));
+  }, [filtered, category]);
+
   return (
-    <section className="py-16 px-4 max-w-7xl mx-auto">
+    <section className="py-14 px-4 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-end justify-between mb-6 flex-wrap gap-4">
         <div>
@@ -132,37 +143,42 @@ export default function PropertyGrid({ filters, onSelectProperty, favorites, onT
         )}
       </AnimatePresence>
 
-      {/* Grid */}
-      <AnimatePresence mode="wait">
-        {filtered.length === 0 ? (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-24 text-muted-foreground"
-          >
-            <div className="text-6xl mb-4">🏠</div>
-            <p className="font-display text-xl font-semibold text-foreground">No properties found</p>
-            <p className="text-sm mt-1">Try adjusting your filters</p>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="grid"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {filtered.map((property, i) => (
-              <PropertyCard
-                key={property.id}
-                property={property}
-                onClick={onSelectProperty}
-                index={i}
-                favorites={favorites}
-                onToggleFavorite={onToggleFavorite}
-              />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Rows */}
+      {filtered.length === 0 ? (
+        <div className="text-center py-24 text-muted-foreground">
+          <div className="text-6xl mb-4">🏠</div>
+          <p className="font-display text-xl font-semibold text-foreground">No properties found</p>
+          <p className="text-sm mt-1">Try adjusting your filters</p>
+        </div>
+      ) : (
+        <div className="space-y-10">
+          {rows.map(row => (
+            <div key={row.label}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-display text-xl sm:text-2xl font-semibold text-foreground">
+                  {row.label}
+                  <span className="ml-2 text-sm font-body font-normal text-muted-foreground">({row.items.length})</span>
+                </h3>
+                <span className="text-xs font-body text-muted-foreground hidden sm:block">
+                  Swipe to explore →
+                </span>
+              </div>
+              <SwipeableRow itemClassName="w-[280px] sm:w-[340px]">
+                {row.items.map((property, i) => (
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    onClick={onSelectProperty}
+                    index={i}
+                    favorites={favorites}
+                    onToggleFavorite={onToggleFavorite}
+                  />
+                ))}
+              </SwipeableRow>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
