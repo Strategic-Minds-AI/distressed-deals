@@ -3,7 +3,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import HeroSearchBar from "@/components/home/HeroSearchBar";
 import housesBg from "@/assets/houses-skyline.svg";
-import distressedBg from "@/assets/distressed-house.svg";
 import duskBg from "@/assets/dusk-suburb.svg";
 
 const SLIDES = [
@@ -16,17 +15,10 @@ const SLIDES = [
   },
   {
     id: 2,
-    image: distressedBg,
+    image: duskBg,
     title: "Analyze",
     highlight: "Every Deal",
     subtitle: "ARV, repair costs, the 70% rule, and projected ROI on every single listing.",
-  },
-  {
-    id: 3,
-    image: duskBg,
-    title: "Make Offers",
-    highlight: "Directly",
-    subtitle: "Submit cash or financed offers and manage your entire pipeline in one portal.",
   },
 ];
 
@@ -50,7 +42,7 @@ export default function Hero() {
   }, []);
 
   useEffect(() => {
-    const t = setInterval(next, 6000);
+    const t = setInterval(next, 7000);
     return () => clearInterval(t);
   }, [next]);
 
@@ -62,7 +54,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative w-full h-[85vh] min-h-[600px] overflow-hidden">
+    <section className="relative w-full h-[80vh] min-h-[560px] overflow-hidden gradient-navy">
       <AnimatePresence mode="sync" custom={direction}>
         <motion.div
           key={slide.id}
@@ -74,12 +66,16 @@ export default function Hero() {
           transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
           className="absolute inset-0"
         >
-          <img src={slide.image} alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/55 via-primary/45 to-primary/85" />
+          <img
+            src={slide.image}
+            alt=""
+            className="w-full h-full object-cover object-bottom"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/85 via-primary/55 to-primary/90" />
         </motion.div>
       </AnimatePresence>
 
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pt-24 pb-16 px-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={`text-${slide.id}`}
@@ -93,10 +89,10 @@ export default function Hero() {
               <span className="w-1.5 h-1.5 rounded-full bg-gold inline-block animate-pulse" />
               Distressed Property Investment Platform
             </div>
-            <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold text-white leading-tight mb-4">
+            <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold text-white leading-tight mb-4 drop-shadow-lg">
               {slide.title} <span className="text-gold italic">{slide.highlight}</span>
             </h1>
-            <p className="text-white/85 text-base sm:text-xl font-body font-light max-w-2xl mx-auto">
+            <p className="text-white/90 text-base sm:text-xl font-body font-light max-w-2xl mx-auto drop-shadow">
               {slide.subtitle}
             </p>
           </motion.div>
@@ -120,7 +116,7 @@ export default function Hero() {
           {STATS.map((s) => (
             <div key={s.label} className="text-center">
               <div className="font-display text-2xl font-bold text-white">{s.value}</div>
-              <div className="text-white/60 text-xs font-body">{s.label}</div>
+              <div className="text-white/70 text-xs font-body">{s.label}</div>
             </div>
           ))}
         </motion.div>
