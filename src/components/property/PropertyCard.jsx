@@ -48,11 +48,11 @@ export default function PropertyCard({ property, onClick, index = 0, favorites, 
       initial={{ opacity: 0, y: 32 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: index * 0.07, ease: "easeOut" }}
-      className="card-hover bg-card rounded-2xl overflow-hidden shadow-md border border-border group cursor-pointer"
+      className="card-hover bg-card rounded-2xl overflow-hidden shadow-md border border-border group cursor-pointer flex flex-row sm:flex-col"
       onClick={() => onClick(property)}
     >
       {/* Image area */}
-      <div className="relative h-56 overflow-hidden">
+      <div className="relative w-32 sm:w-auto h-28 sm:h-56 flex-shrink-0 overflow-hidden">
         <img
           src={property.images[imgIdx]}
           alt={property.title}
@@ -63,31 +63,29 @@ export default function PropertyCard({ property, onClick, index = 0, favorites, 
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
         {/* Top badges */}
-        <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap max-w-[80%]">
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${TYPE_BADGE[property.type]}`}>
+        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-1.5 flex-wrap max-w-[80%]">
+          <span className={`text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full ${TYPE_BADGE[property.type]}`}>
             {property.type === "buy" ? "For Sale" : property.type === "rent" ? "For Rent" : "Selling"}
           </span>
-          {property.tags.slice(0, 1).map(tag => (
-            <span key={tag} className={`text-xs font-medium px-2.5 py-1 rounded-full ${TAG_COLORS[tag] || "bg-gray-100 text-gray-700"}`}>
-              {tag}
-            </span>
-          ))}
+          <span className={`hidden sm:inline text-xs font-medium px-2.5 py-1 rounded-full ${TAG_COLORS[property.tags[0]] || "bg-gray-100 text-gray-700"}`}>
+            {property.tags[0]}
+          </span>
         </div>
 
         {/* Favorite button */}
         <button
-          className="absolute top-3 right-3 p-2 rounded-full glass transition-colors duration-150 hover:bg-white/90"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 sm:p-2 rounded-full glass transition-colors duration-150 hover:bg-white/90"
           onClick={e => { e.stopPropagation(); onToggleFavorite?.(property.id); }}
           aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
         >
           <Heart
-            className={`w-4 h-4 transition-colors duration-150 ${isFav ? "fill-rose-500 text-rose-500" : "text-gray-600"}`}
+            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors duration-150 ${isFav ? "fill-rose-500 text-rose-500" : "text-gray-600"}`}
           />
         </button>
 
         {/* Image dots */}
         {property.images.length > 1 && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 hidden sm:flex">
             {property.images.slice(0, 4).map((_, i) => (
               <button
                 key={i}
@@ -100,42 +98,42 @@ export default function PropertyCard({ property, onClick, index = 0, favorites, 
         )}
 
         {/* Bottom: price */}
-        <div className="absolute bottom-3 left-3">
-          <span className="text-white font-display font-bold text-xl drop-shadow">
+        <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3">
+          <span className="text-white font-display font-bold text-base sm:text-xl drop-shadow">
             {formatPrice(property.price, property.type, property.rentPeriod)}
           </span>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-3 sm:p-4 flex-1 min-w-0 flex flex-col">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-display font-semibold text-lg text-foreground leading-tight line-clamp-1">
+          <h3 className="font-display font-semibold text-base sm:text-lg text-foreground leading-tight line-clamp-2 sm:line-clamp-1">
             {property.title}
           </h3>
-          <span className="text-xs font-body text-muted-foreground bg-muted px-2 py-0.5 rounded-full whitespace-nowrap">
+          <span className="text-xs font-body text-muted-foreground bg-muted px-2 py-0.5 rounded-full whitespace-nowrap hidden sm:inline">
             {property.category}
           </span>
         </div>
 
-        <div className="flex items-center gap-1 text-muted-foreground text-sm mb-3">
-          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+        <div className="flex items-center gap-1 text-muted-foreground text-xs sm:text-sm mb-2 sm:mb-3">
+          <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
           <span className="truncate">{property.address}</span>
         </div>
 
         {/* Stats row */}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground border-t border-border pt-3">
-          <div className="flex items-center gap-1.5">
-            <Bed className="w-4 h-4" />
+        <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground border-t border-border pt-2 sm:pt-3 mt-auto">
+          <div className="flex items-center gap-1">
+            <Bed className="w-3.5 h-3.5" />
             <span className="font-medium text-foreground">{property.beds}</span>
             <span>bd</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Bath className="w-4 h-4" />
+          <div className="flex items-center gap-1">
+            <Bath className="w-3.5 h-3.5" />
             <span className="font-medium text-foreground">{property.baths}</span>
             <span>ba</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 hidden sm:flex">
             <Square className="w-4 h-4" />
             <span className="font-medium text-foreground">{property.sqft.toLocaleString()}</span>
             <span>ft²</span>
