@@ -6,7 +6,7 @@ import { FALLBACK_IMAGE } from "@/lib/imageFallback";
 
 export default function Hero() {
   return (
-    <section className="relative h-[62vh] min-h-[440px] sm:h-[72vh] sm:min-h-[520px] overflow-hidden">
+    <section className="relative h-[360px] sm:h-[440px] overflow-hidden">
       <SmartImage
         src={FALLBACK_IMAGE}
         alt="Distressed investment property"
