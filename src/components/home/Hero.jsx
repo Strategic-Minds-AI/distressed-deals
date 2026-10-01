@@ -6,7 +6,7 @@ import { FALLBACK_IMAGE } from "@/lib/imageFallback";
 
 export default function Hero() {
   return (
-    <section className="relative h-[90vh] min-h-[600px] overflow-hidden">
+    <section className="relative h-[62vh] min-h-[440px] sm:h-[72vh] sm:min-h-[520px] overflow-hidden">
       <SmartImage
         src={FALLBACK_IMAGE}
         alt="Distressed investment property"
@@ -33,11 +33,11 @@ export default function Hero() {
             <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
             Distressed Property Investment Platform
           </div>
-          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-4">
+          <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-3">
             Find <span className="text-gold italic">Deep-Discount</span>
             <br /> Distressed Real Estate
           </h1>
-          <p className="text-white/85 text-lg font-light mb-8 max-w-2xl mx-auto">
+          <p className="text-white/85 text-base sm:text-lg font-light mb-6 max-w-2xl mx-auto">
             Foreclosures, short sales, REOs, auctions, and probate deals — each analyzed with ARV, repair costs, the 70% rule, and projected ROI.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
