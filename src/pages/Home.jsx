@@ -47,13 +47,8 @@ export default function Home() {
       </header>
 
       {/* Hero */}
-      <section className="relative h-[88vh] min-h-[560px] overflow-hidden">
-        <img
-          src="https://images.unsplash.com/photo-1486406146926-c627a92c1ecc?w=1600&q=85"
-          alt="Distressed property"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/60 to-primary/85" />
+      <section className="relative h-[88vh] min-h-[560px] overflow-hidden gradient-navy">
+        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, hsl(38,80%,55%) 0%, transparent 45%), radial-gradient(circle at 80% 70%, hsl(220,45%,28%) 0%, transparent 50%)" }} />
 
         <div className="relative h-full flex items-center justify-center px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="max-w-3xl">
