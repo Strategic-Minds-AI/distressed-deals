@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Heart, Bed, Bath, Square, MapPin, TrendingUp, Wrench, AlertTriangle, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import SmartImage from "@/components/common/SmartImage";
 import {
   formatCurrency,
   maxOffer70,
@@ -24,12 +25,10 @@ export default function DistressedPropertyCard({ property, onClick, index = 0, i
     >
       {/* Image */}
       <div className="relative h-44 overflow-hidden">
-        <img
+        <SmartImage
           src={property.images?.[imgIdx] || property.images?.[0]}
           alt={property.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-          draggable={false}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 

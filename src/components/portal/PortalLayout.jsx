@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
-import { LayoutDashboard, Search, Heart, FileText, LogOut, Menu, X, Building2, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Search, Heart, FileText, LogOut, Menu, X, Building2, TrendingUp, Database, Bot, Calculator, Sparkles } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const NAV = [
   { label: "Dashboard", path: "/portal", icon: LayoutDashboard },
   { label: "Browse Deals", path: "/portal/browse", icon: Search },
+  { label: "AI Search", path: "/portal/ai-search", icon: Sparkles },
+  { label: "Deal Analysis", path: "/portal/analysis", icon: Calculator },
+  { label: "AI Coach", path: "/portal/coach", icon: Bot },
   { label: "Watchlist", path: "/portal/watchlist", icon: Heart },
   { label: "My Offers", path: "/portal/offers", icon: FileText },
+  { label: "Inventory Cleaner", path: "/portal/cleaner", icon: Database },
 ];
 
 export default function PortalLayout() {

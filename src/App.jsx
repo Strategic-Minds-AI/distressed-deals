@@ -12,6 +12,10 @@ import BrowseDeals from './pages/BrowseDeals';
 import Watchlist from './pages/Watchlist';
 import MyOffers from './pages/MyOffers';
 import PropertyDetail from './pages/PropertyDetail';
+import InventoryCleaner from './pages/InventoryCleaner';
+import AISearch from './pages/AISearch';
+import DealAnalysis from './pages/DealAnalysis';
+import Coach from './pages/Coach';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -46,6 +50,10 @@ const AuthenticatedApp = () => {
         <Route path="watchlist" element={<Watchlist />} />
         <Route path="offers" element={<MyOffers />} />
         <Route path="property/:id" element={<PropertyDetail />} />
+        <Route path="cleaner" element={<InventoryCleaner />} />
+        <Route path="ai-search" element={<AISearch />} />
+        <Route path="analysis" element={<DealAnalysis />} />
+        <Route path="coach" element={<Coach />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

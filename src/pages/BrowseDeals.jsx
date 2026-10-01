@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { useLiveProperties } from "@/hooks/useLiveProperties";
 import DistressedPropertyCard from "@/components/property/DistressedPropertyCard";
 import SwipeableRow from "@/components/property/SwipeableRow";
 
@@ -14,27 +14,22 @@ const SORTS = [
 ];
 
 export default function BrowseDeals() {
-  const [loading, setLoading] = useState(true);
-  const [properties, setProperties] = useState([]);
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("-listed_date");
   const [search, setSearch] = useState("");
   const [minRoi, setMinRoi] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      const query = { status: "Active" };
-      if (category !== "All") query.category = category;
-      if (search.trim()) query.title = { $regex: search.trim(), $options: "i" };
-      if (minRoi > 0) query.projected_roi = { $gte: minRoi };
-      const res = await base44.entities.Property.filter(query, { sort, limit: 100 });
-      setProperties(res.items || res);
-      setLoading(false);
-    }
-    load();
-  }, [category, sort, search, minRoi]);
+  // Build the server query from filters; live subscription keeps it fresh.
+  const query = useMemo(() => {
+    const q = { status: "Active" };
+    if (category !== "All") q.category = category;
+    if (search.trim()) q.title = { $regex: search.trim(), $options: "i" };
+    if (minRoi > 0) q.projected_roi = { $gte: minRoi };
+    return q;
+  }, [category, search, minRoi]);
+
+  const { items: properties, loading } = useLiveProperties(query, { sort, limit: 100 });
 
   const rows = useMemo(() => {
     if (category !== "All") return [{ label: category, items: properties }];

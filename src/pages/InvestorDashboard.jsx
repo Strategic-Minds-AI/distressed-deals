@@ -2,38 +2,41 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { TrendingUp, Heart, FileText, DollarSign, ArrowRight, Eye } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { useLiveProperties } from "@/hooks/useLiveProperties";
 import DistressedPropertyCard from "@/components/property/DistressedPropertyCard";
 import { formatCurrency } from "@/lib/investment";
 
 export default function InvestorDashboard() {
-  const [loading, setLoading] = useState(true);
-  const [featured, setFeatured] = useState([]);
   const [watchlistCount, setWatchlistCount] = useState(0);
   const [offers, setOffers] = useState([]);
-  const [stats, setStats] = useState({ totalDeals: 0, avgRoi: 0, totalEquity: 0 });
+
+  // Live auto-refresh: featured + all active deals stay in sync.
+  const { items: featured, loading: loadingFeat } = useLiveProperties({ featured: true, status: "Active" }, { sort: "-listed_date", limit: 8 });
+  const { items: allActive, loading: loadingAll } = useLiveProperties({ status: "Active" }, { sort: "-listed_date", limit: 500 });
 
   useEffect(() => {
-    async function load() {
+    let active = true;
+    async function loadExtras() {
       try {
-        const [feat, wl, off, all] = await Promise.all([
-          base44.entities.Property.filter({ featured: true, status: "Active" }, { sort: "-listed_date", limit: 8 }),
+        const [wl, off] = await Promise.all([
           base44.entities.Watchlist.filter({}, { limit: 100 }),
           base44.entities.Offer.filter({}, { sort: "-created_date", limit: 5 }),
-          base44.entities.Property.filter({ status: "Active" }, { limit: 500 }),
         ]);
-        setFeatured(feat.items || feat);
+        if (!active) return;
         setWatchlistCount((wl.items || wl).length);
         setOffers(off.items || off);
-        const items = all.items || all;
-        const avgRoi = items.length ? Math.round(items.reduce((s, p) => s + (p.projected_roi || 0), 0) / items.length) : 0;
-        const totalEquity = items.reduce((s, p) => s + ((p.arv || 0) - (p.asking_price || 0)), 0);
-        setStats({ totalDeals: items.length, avgRoi, totalEquity });
-      } finally {
-        setLoading(false);
-      }
+      } catch { /* ignore */ }
     }
-    load();
+    loadExtras();
+    const unsubW = base44.entities.Watchlist.subscribe(loadExtras);
+    const unsubO = base44.entities.Offer.subscribe(loadExtras);
+    return () => { active = false; unsubW && unsubW(); unsubO && unsubO(); };
   }, []);
+
+  const loading = loadingFeat || loadingAll;
+  const avgRoi = allActive.length ? Math.round(allActive.reduce((s, p) => s + (p.projected_roi || 0), 0) / allActive.length) : 0;
+  const totalEquity = allActive.reduce((s, p) => s + ((p.arv || 0) - (p.asking_price || 0)), 0);
+  const stats = { totalDeals: allActive.length, avgRoi, totalEquity };
 
   if (loading) {
     return (

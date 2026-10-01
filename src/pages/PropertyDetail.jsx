@@ -5,6 +5,7 @@ import {
   Calendar, Phone, Mail, Send, CheckCircle2, Calculator, Building2, DollarSign,
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import SmartImage from "@/components/common/SmartImage";
 import {
   formatCurrency, formatCurrencyFull, maxOffer70, projectedProfit, roiPercent, equityPercent,
   CATEGORY_COLORS, STATUS_COLORS, CONDITION_COLORS,
@@ -130,7 +131,7 @@ export default function PropertyDetail() {
       <div className="max-w-7xl mx-auto px-4 pt-6">
         {/* Gallery */}
         <div className="rounded-2xl overflow-hidden mb-6 bg-muted h-64 sm:h-96">
-          <img src={property.images?.[imgIdx]} alt={property.title} className="w-full h-full object-cover" />
+          <SmartImage src={property.images?.[imgIdx]} alt={property.title} className="w-full h-full object-cover" />
         </div>
         {property.images?.length > 1 && (
           <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide">
@@ -142,7 +143,7 @@ export default function PropertyDetail() {
                   i === imgIdx ? "border-primary" : "border-transparent"
                 }`}
               >
-                <img src={img} alt="" className="w-full h-full object-cover" />
+                <SmartImage src={img} alt="" className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
