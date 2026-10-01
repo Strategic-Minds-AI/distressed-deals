@@ -1,0 +1,185 @@
+{
+  "name": "Property",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "zip": {
+      "type": "string"
+    },
+    "asking_price": {
+      "type": "number"
+    },
+    "arv": {
+      "type": "number",
+      "description": "After Repair Value"
+    },
+    "estimated_repair_cost": {
+      "type": "number"
+    },
+    "projected_roi": {
+      "type": "number",
+      "description": "Projected ROI percentage"
+    },
+    "cap_rate": {
+      "type": "number"
+    },
+    "equity_percent": {
+      "type": "number",
+      "description": "Estimated equity as percent of ARV"
+    },
+    "sqft": {
+      "type": "number"
+    },
+    "beds": {
+      "type": "number"
+    },
+    "baths": {
+      "type": "number"
+    },
+    "lot_size": {
+      "type": "string"
+    },
+    "year_built": {
+      "type": "number"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Pre-Foreclosure",
+        "Foreclosure",
+        "Short Sale",
+        "Bank-Owned (REO)",
+        "Auction",
+        "Tax Lien",
+        "Probate",
+        "Distressed Sale"
+      ]
+    },
+    "distress_reason": {
+      "type": "string"
+    },
+    "condition_grade": {
+      "type": "string",
+      "enum": [
+        "A - Excellent",
+        "B - Good",
+        "C - Fair",
+        "D - Poor",
+        "E - Tear-down"
+      ]
+    },
+    "auction_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Active",
+        "Under Contract",
+        "Pending",
+        "Sold",
+        "Withdrawn"
+      ],
+      "default": "Active"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "description": {
+      "type": "string"
+    },
+    "repair_summary": {
+      "type": "string"
+    },
+    "agent_name": {
+      "type": "string"
+    },
+    "agent_phone": {
+      "type": "string"
+    },
+    "agent_email": {
+      "type": "string"
+    },
+    "lat": {
+      "type": "number"
+    },
+    "lng": {
+      "type": "number"
+    },
+    "listed_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "title",
+    "address",
+    "asking_price",
+    "category",
+    "status"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.portal_role": "agent"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.portal_role": "agent"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.portal_role": "agent"
+          }
+        }
+      ]
+    }
+  }
+}

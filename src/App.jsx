@@ -6,6 +6,12 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Home from './pages/Home.jsx';
+import PortalLayout from './components/portal/PortalLayout';
+import InvestorDashboard from './pages/InvestorDashboard';
+import BrowseDeals from './pages/BrowseDeals';
+import Watchlist from './pages/Watchlist';
+import MyOffers from './pages/MyOffers';
+import PropertyDetail from './pages/PropertyDetail';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -34,6 +40,13 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/portal" element={<PortalLayout />}>
+        <Route index element={<InvestorDashboard />} />
+        <Route path="browse" element={<BrowseDeals />} />
+        <Route path="watchlist" element={<Watchlist />} />
+        <Route path="offers" element={<MyOffers />} />
+        <Route path="property/:id" element={<PropertyDetail />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -1,17 +1,42 @@
 {
-  "properties": {
-    "role": {
-      "type": "string",
-      "description": "The role of the user in the app",
-      "enum": [
-        "admin",
-        "user"
-      ]
-    }
-  },
-  "required": [
-    "role"
-  ],
   "name": "User",
-  "type": "object"
+  "type": "object",
+  "properties": {
+    "portal_role": {
+      "type": "string",
+      "enum": [
+        "investor",
+        "agent",
+        "buyer",
+        "admin"
+      ],
+      "default": "investor"
+    },
+    "company": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "investor_type": {
+      "type": "string",
+      "enum": [
+        "Flipper",
+        "Buy-and-Hold",
+        "Wholesaler",
+        "BRRRR",
+        "Developer",
+        "Syndicator"
+      ]
+    },
+    "budget_range": {
+      "type": "string"
+    },
+    "target_markets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
 }
