@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Building2, TrendingUp, DollarSign, ArrowRight,
   AlertTriangle, Calculator, Users,
@@ -16,6 +16,7 @@ import HowItWorks from "@/components/home/HowItWorks";
 import Testimonials from "@/components/home/Testimonials";
 
 export default function Home() {
+  const navigate = useNavigate();
   const [featured, setFeatured] = useState([]);
   const { stats: srvStats } = usePropertyStats({ status: "Active" });
 
@@ -75,7 +76,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {featured.map((p, i) => (
-              <DistressedPropertyCard key={p.id} property={p} index={i} onClick={() => window.location.assign(`/portal/property/${p.id}`)} />
+              <DistressedPropertyCard key={p.id} property={p} index={i} onClick={() => navigate(`/portal/property/${p.id}`)} />
             ))}
           </div>
         </section>

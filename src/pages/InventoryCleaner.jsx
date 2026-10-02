@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import {
   Database, Sparkles, Loader2, CheckCircle2, AlertTriangle,
@@ -8,6 +9,7 @@ import { useLiveProperties } from "@/hooks/useLiveProperties";
 import DistressedPropertyCard from "@/components/property/DistressedPropertyCard";
 
 export default function InventoryCleaner() {
+  const navigate = useNavigate();
   const { items: properties, loading, refresh } = useLiveProperties({}, { sort: "-created_date", limit: 500 });
   const [running, setRunning] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -146,7 +148,7 @@ export default function InventoryCleaner() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {issues.dupes.slice(0, 8).map((p, i) => (
-              <DistressedPropertyCard key={p.id} property={p} index={i} onClick={() => window.location.assign(`/portal/property/${p.id}`)} />
+              <DistressedPropertyCard key={p.id} property={p} index={i} onClick={() => navigate(`/portal/property/${p.id}`)} />
             ))}
           </div>
         </div>

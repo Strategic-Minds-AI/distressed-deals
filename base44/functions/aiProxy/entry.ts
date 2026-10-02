@@ -1,7 +1,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 import { secrets } from "base44:runtime";
 
-const GATEWAY_URL = "https://ai-gateway.vercel.app/v1/chat/completions";
+const GATEWAY_URL = "https://ai-gateway.vercel.sh/v1/chat/completions";
 
 export default async function(req) {
   try {

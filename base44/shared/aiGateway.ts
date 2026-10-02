@@ -4,7 +4,7 @@
  * When the key is missing, returns NOT_CONFIGURED with exact required config.
  */
 
-const GATEWAY_URL = "https://ai-gateway.vercel.app/v1/chat/completions";
+const GATEWAY_URL = "https://ai-gateway.vercel.sh/v1/chat/completions";
 
 export interface AICallParams {
   model: string;
@@ -27,7 +27,7 @@ export interface AICallResult {
 }
 
 export async function callAI(params: AICallParams): Promise<AICallResult> {
-  const key = process.env.AI_VERCEL_GATEWAY_KEY;
+  const key = (typeof process !== "undefined" && process.env?.AI_VERCEL_GATEWAY_KEY) || (typeof Deno !== "undefined" ? Deno.env.get("AI_VERCEL_GATEWAY_KEY") : undefined);
   if (!key) {
     return {
       status: "NOT_CONFIGURED",
@@ -79,7 +79,7 @@ export const AI_MODELS = {
 } as const;
 
 export async function checkGatewayHealth(): Promise<{ configured: boolean; key_prefix?: string; message: string }> {
-  const key = process.env.AI_VERCEL_GATEWAY_KEY;
+  const key = (typeof process !== "undefined" && process.env?.AI_VERCEL_GATEWAY_KEY) || (typeof Deno !== "undefined" ? Deno.env.get("AI_VERCEL_GATEWAY_KEY") : undefined);
   if (!key) return { configured: false, message: "NOT_CONFIGURED — set AI_VERCEL_GATEWAY_KEY in Secrets" };
   return { configured: true, key_prefix: key.slice(0, 8) + "…", message: "Gateway key present" };
 }

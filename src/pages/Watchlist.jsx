@@ -10,8 +10,16 @@ export default function Watchlist() {
 
   async function load() {
     setLoading(true);
-    const res = await base44.entities.Watchlist.filter({}, { sort: "-created_date", limit: 100 });
-    setItems(res.items || res);
+    try {
+      const res = await base44.entities.Watchlist.filter({}, { sort: "-created_date", limit: 100 });
+      const wlItems = res.items || res;
+      const props = await Promise.all(
+        wlItems.filter(w => w.property_id).map(w => base44.entities.Property.get(w.property_id).catch(() => null))
+      );
+      const propMap = {};
+      props.forEach(p => { if (p) propMap[p.id] = p; });
+      setItems(wlItems.map(w => ({ ...w, _property: propMap[w.property_id] })));
+    } catch { /* ignore */ }
     setLoading(false);
   }
 
@@ -30,7 +38,7 @@ export default function Watchlist() {
     );
   }
 
-  const totalEquity = items.reduce((s, w) => s + (w.asking_price ? 0 : 0), 0); // placeholder; full metrics on detail
+  const totalEquity = items.reduce((s, w) => s + ((w._property?.arv || 0) - (w._property?.asking_price || w.asking_price || 0)), 0);
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -60,12 +68,18 @@ export default function Watchlist() {
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground mb-3 truncate">{w.property_address}</p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold text-foreground">{w.asking_price ? formatCurrency(w.asking_price) : "—"}</span>
                   <a href={`/portal/property/${w.property_id}`} className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
                     View <ArrowRight className="w-3.5 h-3.5" />
                   </a>
                 </div>
+                {w._property?.arv > 0 && (
+                  <div className="flex gap-3 text-xs text-muted-foreground">
+                    <span>ARV: <b className="text-foreground">{formatCurrency(w._property.arv)}</b></span>
+                    {w._property.projected_roi > 0 && <span>ROI: <b className="text-emerald-600">{w._property.projected_roi}%</b></span>}
+                  </div>
+                )}
                 {w.notes && <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border italic">"{w.notes}"</p>}
               </div>
             </div>

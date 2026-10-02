@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { TrendingUp, Heart, FileText, DollarSign, ArrowRight, Eye } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useLiveProperties } from "@/hooks/useLiveProperties";
@@ -8,6 +8,7 @@ import DistressedPropertyCard from "@/components/property/DistressedPropertyCard
 import { formatCurrency } from "@/lib/investment";
 
 export default function InvestorDashboard() {
+  const navigate = useNavigate();
   const [watchlistCount, setWatchlistCount] = useState(0);
   const [offers, setOffers] = useState([]);
 
@@ -97,7 +98,7 @@ export default function InvestorDashboard() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {featured.map((p, i) => (
-          <DistressedPropertyCard key={p.id} property={p} index={i} onClick={() => window.location.assign(`/portal/property/${p.id}`)} />
+          <DistressedPropertyCard key={p.id} property={p} index={i} onClick={() => navigate(`/portal/property/${p.id}`)} />
         ))}
       </div>
 
