@@ -1,0 +1,14 @@
+{
+  "name": "distress-deals-worker",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Background worker for DistressDeals — syncs Supabase properties every 2 hours",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js"
+  },
+  "dependencies": {
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.4.5"
+  }
+}
