@@ -31,11 +31,12 @@ export default function Coach() {
     setInput("");
     setLoading(true);
     try {
-      const convo = next.map((m) => `${m.role === "user" ? "Investor" : "Coach"}: ${m.content}`).join("\n\n");
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `${SYSTEM_PROMPT}\n\nConversation so far:\n${convo}\n\nCoach:`,
+      const convoMessages = next.map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }));
+      const res = await base44.functions.invoke("aiProxy", {
+        system_prompt: SYSTEM_PROMPT,
+        messages: convoMessages,
       });
-      setMessages((m) => [...m, { role: "assistant", content: typeof res === "string" ? res : JSON.stringify(res) }]);
+      setMessages((m) => [...m, { role: "assistant", content: res.data?.content || "Sorry, I couldn't respond just now." }]);
     } catch (e) {
       setMessages((m) => [...m, { role: "assistant", content: "Sorry, I couldn't respond just now. Please try again." }]);
     } finally {

@@ -1,0 +1,45 @@
+{
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "interval",
+      "cron_expression": null,
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": 2,
+      "interval_unit": "hours",
+      "interval_anchor": "2026-10-02T06:00:00Z",
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "property_sync",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "sync": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "syncProperties",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Sync properties from Supabase",
+            "description": "Upserts distressed property inventory"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Property Sync",
+  "description": "Syncs distressed properties from Supabase every 2 hours to keep inventory fresh"
+}

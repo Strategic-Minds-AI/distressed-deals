@@ -44,11 +44,11 @@ export default function AISearch() {
     setError(null);
     setSearched(true);
     try {
-      const ai = await base44.integrations.Core.InvokeLLM({
+      const aiRes = await base44.functions.invoke("aiProxy", {
         prompt: `Parse this distressed-property search request into structured filters. Only use the fields provided. Today's categories: ${CATEGORIES.join(", ")}. Request: "${term}"`,
         response_json_schema: PARSE_SCHEMA,
       });
-      const f = ai || {};
+      const f = aiRes.data?.json || {};
       setParsed(f);
 
       const mongo = { status: "Active" };

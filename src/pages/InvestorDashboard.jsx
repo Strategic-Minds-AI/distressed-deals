@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { TrendingUp, Heart, FileText, DollarSign, ArrowRight, Eye } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useLiveProperties } from "@/hooks/useLiveProperties";
+import { usePropertyStats } from "@/hooks/usePropertyStats";
 import DistressedPropertyCard from "@/components/property/DistressedPropertyCard";
 import { formatCurrency } from "@/lib/investment";
 
@@ -10,9 +11,9 @@ export default function InvestorDashboard() {
   const [watchlistCount, setWatchlistCount] = useState(0);
   const [offers, setOffers] = useState([]);
 
-  // Live auto-refresh: featured + all active deals stay in sync.
+  // Live auto-refresh: featured deals + server-side stats.
   const { items: featured, loading: loadingFeat } = useLiveProperties({ featured: true, status: "Active" }, { sort: "-listed_date", limit: 8 });
-  const { items: allActive, loading: loadingAll } = useLiveProperties({ status: "Active" }, { sort: "-listed_date", limit: 500 });
+  const { stats: srvStats, loading: loadingStats } = usePropertyStats({ status: "Active" });
 
   useEffect(() => {
     let active = true;
@@ -33,10 +34,8 @@ export default function InvestorDashboard() {
     return () => { active = false; unsubW && unsubW(); unsubO && unsubO(); };
   }, []);
 
-  const loading = loadingFeat || loadingAll;
-  const avgRoi = allActive.length ? Math.round(allActive.reduce((s, p) => s + (p.projected_roi || 0), 0) / allActive.length) : 0;
-  const totalEquity = allActive.reduce((s, p) => s + ((p.arv || 0) - (p.asking_price || 0)), 0);
-  const stats = { totalDeals: allActive.length, avgRoi, totalEquity };
+  const loading = loadingFeat || loadingStats;
+  const stats = { totalDeals: srvStats.totalDeals, avgRoi: srvStats.avgRoi, totalEquity: srvStats.totalEquity };
 
   if (loading) {
     return (

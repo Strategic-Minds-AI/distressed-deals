@@ -128,6 +128,19 @@
     "featured": {
       "type": "boolean",
       "default": false
+    },
+    "last_synced": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time this property was synced from the source"
+    },
+    "source": {
+      "type": "string",
+      "description": "Data source e.g. supabase, manual, seed"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "External ID from the source system"
     }
   },
   "required": [

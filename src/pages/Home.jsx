@@ -7,6 +7,7 @@ import {
 import { base44 } from "@/api/base44Client";
 import DistressedPropertyCard from "@/components/property/DistressedPropertyCard";
 import { formatCurrency } from "@/lib/investment";
+import { usePropertyStats } from "@/hooks/usePropertyStats";
 import StickyNav from "@/components/home/StickyNav";
 import Hero from "@/components/home/Hero";
 import TrustBar from "@/components/home/TrustBar";
@@ -16,26 +17,21 @@ import Testimonials from "@/components/home/Testimonials";
 
 export default function Home() {
   const [featured, setFeatured] = useState([]);
-  const [stats, setStats] = useState({ deals: 0, avgRoi: 0, equity: 0, investors: 18500 });
+  const { stats: srvStats } = usePropertyStats({ status: "Active" });
 
   useEffect(() => {
     async function load() {
       try {
-        const [feat, all] = await Promise.all([
-          base44.entities.Property.filter({ featured: true, status: "Active" }, { sort: "-listed_date", limit: 4 }),
-          base44.entities.Property.filter({ status: "Active" }, { limit: 500 }),
-        ]);
+        const feat = await base44.entities.Property.filter({ featured: true, status: "Active" }, { sort: "-listed_date", limit: 4 });
         setFeatured(feat.items || feat);
-        const items = all.items || all;
-        const avgRoi = items.length ? Math.round(items.reduce((s, p) => s + (p.projected_roi || 0), 0) / items.length) : 0;
-        const equity = items.reduce((s, p) => s + ((p.arv || 0) - (p.asking_price || 0)), 0);
-        setStats({ deals: items.length, avgRoi, equity, investors: 18500 });
       } catch {
         // app may require auth; landing still renders
       }
     }
     load();
   }, []);
+
+  const stats = { deals: srvStats.totalDeals, avgRoi: srvStats.avgRoi, equity: srvStats.totalEquity, investors: 18500 };
 
   return (
     <div className="min-h-screen bg-background">

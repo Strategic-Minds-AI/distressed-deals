@@ -1,5 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, SlidersHorizontal, X } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { useLiveProperties } from "@/hooks/useLiveProperties";
 import DistressedPropertyCard from "@/components/property/DistressedPropertyCard";
 import SwipeableRow from "@/components/property/SwipeableRow";
@@ -19,15 +21,42 @@ export default function BrowseDeals() {
   const [search, setSearch] = useState("");
   const [minRoi, setMinRoi] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
+  const [stateFilter, setStateFilter] = useState("");
+  const [cityFilter, setCityFilter] = useState("");
+  const [states, setStates] = useState([]);
+  const [cities, setCities] = useState([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    base44.entities.Property.list({ distinct: "state" }).then(res => setStates((res.items || []).filter(Boolean).sort()));
+  }, []);
+
+  useEffect(() => {
+    if (stateFilter) {
+      base44.entities.Property.filter({ state: stateFilter }, { distinct: "city" }).then(res => setCities((res.items || []).filter(Boolean).sort()));
+    } else { setCities([]); }
+    setCityFilter("");
+  }, [stateFilter]);
 
   // Build the server query from filters; live subscription keeps it fresh.
   const query = useMemo(() => {
     const q = { status: "Active" };
     if (category !== "All") q.category = category;
-    if (search.trim()) q.title = { $regex: search.trim(), $options: "i" };
+    if (stateFilter) q.state = stateFilter;
+    if (cityFilter) q.city = cityFilter;
+    if (search.trim()) {
+      const term = search.trim();
+      q.$or = [
+        { title: { $regex: term, $options: "i" } },
+        { address: { $regex: term, $options: "i" } },
+        { city: { $regex: term, $options: "i" } },
+        { state: { $regex: term, $options: "i" } },
+        { zip: { $regex: term, $options: "i" } },
+      ];
+    }
     if (minRoi > 0) q.projected_roi = { $gte: minRoi };
     return q;
-  }, [category, search, minRoi]);
+  }, [category, search, minRoi, stateFilter, cityFilter]);
 
   const { items: properties, loading } = useLiveProperties(query, { sort, limit: 100 });
 
@@ -63,6 +92,16 @@ export default function BrowseDeals() {
         >
           {SORTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
+        <select value={stateFilter} onChange={e => setStateFilter(e.target.value)} className="text-sm border border-border rounded-lg px-3 py-2.5 bg-card text-foreground outline-none cursor-pointer">
+          <option value="">All States</option>
+          {states.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        {stateFilter && (
+          <select value={cityFilter} onChange={e => setCityFilter(e.target.value)} className="text-sm border border-border rounded-lg px-3 py-2.5 bg-card text-foreground outline-none cursor-pointer">
+            <option value="">All Cities</option>
+            {cities.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
         <button
           onClick={() => setShowFilters(v => !v)}
           className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-card text-sm hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors duration-150"
@@ -106,7 +145,7 @@ export default function BrowseDeals() {
             </div>
           </div>
           <button
-            onClick={() => { setMinRoi(0); setCategory("All"); setSearch(""); setSort("-listed_date"); }}
+            onClick={() => { setMinRoi(0); setCategory("All"); setSearch(""); setSort("-listed_date"); setStateFilter(""); setCityFilter(""); }}
             className="ml-auto flex items-center gap-1 text-sm text-muted-foreground hover:text-destructive transition-colors duration-150"
           >
             <X className="w-4 h-4" /> Clear
@@ -137,7 +176,7 @@ export default function BrowseDeals() {
                     key={p.id}
                     property={p}
                     index={i}
-                    onClick={() => window.location.assign(`/portal/property/${p.id}`)}
+                    onClick={() => navigate(`/portal/property/${p.id}`)}
                   />
                 ))}
               </SwipeableRow>

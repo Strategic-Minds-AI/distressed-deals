@@ -72,11 +72,11 @@ Repair Summary: ${property.repair_summary || ""}
 
 Provide realistic cap rate, cash flow, cash-on-cash return, NOI, GRM and DSCR assuming a typical 25% down, 7% interest, 30-year amortization investor loan and market rents for the area. Be conservative and deterministic.`;
 
-      const res = await base44.integrations.Core.InvokeLLM({
+      const res = await base44.functions.invoke("aiProxy", {
         prompt,
         response_json_schema: ANALYSIS_SCHEMA,
       });
-      setReport(res);
+      setReport(res.data?.json);
     } catch (e) {
       setError(e?.message || "Analysis failed");
     } finally {

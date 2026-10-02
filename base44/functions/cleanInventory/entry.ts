@@ -45,11 +45,19 @@ export default async function(req) {
       return Response.json({ error: "Forbidden — admin or agent only" }, { status: 403 });
     }
 
-    const all = await base44.asServiceRole.entities.Property.filter(
-      {},
-      { limit: 500, sort: "created_date" }
-    );
-    const items = all.items || all;
+    let allItems = [];
+    let cursor = undefined;
+    let hasMore = true;
+    while (hasMore) {
+      const page = await base44.asServiceRole.entities.Property.filter(
+        {},
+        { limit: 500, sort: "created_date", cursor }
+      );
+      allItems = allItems.concat(page.items || []);
+      hasMore = page.has_more;
+      cursor = page.next_cursor;
+    }
+    const items = allItems;
 
     const norm = (s) =>
       (s || "").toString().toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40);

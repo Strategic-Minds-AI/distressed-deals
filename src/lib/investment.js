@@ -9,7 +9,6 @@ export function formatCurrency(n) {
 export function formatCurrencyFull(n) {
   if (n == null) return "—";
   return `$${n.toLocaleString()}`;
-;
 }
 
 // 70% rule: max offer = (ARV * 0.70) - repair cost
