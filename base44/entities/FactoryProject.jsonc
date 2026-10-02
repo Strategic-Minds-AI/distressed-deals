@@ -1,0 +1,124 @@
+{
+  "name": "FactoryProject",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "intake_type": {
+      "type": "string",
+      "enum": [
+        "idea",
+        "client",
+        "business",
+        "workflow",
+        "app",
+        "website",
+        "system_requirement"
+      ],
+      "default": "idea"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "intake",
+        "discovery",
+        "brand_options",
+        "approved",
+        "building",
+        "validating",
+        "release_ready",
+        "operating",
+        "on_hold",
+        "cancelled"
+      ],
+      "default": "intake"
+    },
+    "current_phase": {
+      "type": "string",
+      "enum": [
+        "plan",
+        "discovery",
+        "brand_options",
+        "approval",
+        "auto_builder_docs",
+        "build",
+        "validation",
+        "release",
+        "operate"
+      ],
+      "default": "plan"
+    },
+    "industry_pack_id": {
+      "type": "string"
+    },
+    "generator_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "adapter_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "workflow_id": {
+      "type": "string"
+    },
+    "validation_profile_id": {
+      "type": "string"
+    },
+    "quality_profile_id": {
+      "type": "string"
+    },
+    "provisioning_profile_id": {
+      "type": "string"
+    },
+    "runtime_profile_id": {
+      "type": "string"
+    },
+    "release_profile_id": {
+      "type": "string"
+    },
+    "monetization_profile_id": {
+      "type": "string"
+    },
+    "brand_packs": {
+      "type": "array",
+      "items": {}
+    },
+    "website_designs": {
+      "type": "array",
+      "items": {}
+    },
+    "workflow_options": {
+      "type": "array",
+      "items": {}
+    },
+    "operator_selection": {
+      "type": "object"
+    },
+    "artifact_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "run_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "title",
+    "intake_type",
+    "status"
+  ]
+}

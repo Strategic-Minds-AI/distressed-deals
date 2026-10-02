@@ -16,6 +16,16 @@ import InventoryCleaner from './pages/InventoryCleaner';
 import AISearch from './pages/AISearch';
 import DealAnalysis from './pages/DealAnalysis';
 import Coach from './pages/Coach';
+import FactoryLayout from './components/factory/FactoryLayout';
+import CommandCenter from './pages/factory/CommandCenter';
+import FactoryProjects from './pages/factory/Projects';
+import CapabilityRegistry from './pages/factory/CapabilityRegistry';
+import ArtifactExplorer from './pages/factory/ArtifactExplorer';
+import FactoryApprovals from './pages/factory/Approvals';
+import AuditReceipts from './pages/factory/AuditReceipts';
+import RunConsole from './pages/factory/RunConsole';
+import FactorySettings from './pages/factory/FactorySettings';
+import QueuedModule from './pages/factory/QueuedModule';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -54,6 +64,17 @@ const AuthenticatedApp = () => {
         <Route path="ai-search" element={<AISearch />} />
         <Route path="analysis" element={<DealAnalysis />} />
         <Route path="coach" element={<Coach />} />
+      </Route>
+      <Route path="/factory" element={<FactoryLayout />}>
+        <Route index element={<CommandCenter />} />
+        <Route path="projects" element={<FactoryProjects />} />
+        <Route path="capabilities" element={<CapabilityRegistry />} />
+        <Route path="artifacts" element={<ArtifactExplorer />} />
+        <Route path="approvals" element={<FactoryApprovals />} />
+        <Route path="audit" element={<AuditReceipts />} />
+        <Route path="runs" element={<RunConsole />} />
+        <Route path="settings" element={<FactorySettings />} />
+        <Route path="*" element={<QueuedModule />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

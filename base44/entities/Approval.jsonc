@@ -1,0 +1,59 @@
+{
+  "name": "Approval",
+  "type": "object",
+  "properties": {
+    "approval_id": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "action_type": {
+      "type": "string",
+      "enum": [
+        "production_deployment",
+        "dns_domain",
+        "db_migration",
+        "secret_change",
+        "payment_spend",
+        "permission_escalation",
+        "external_account",
+        "public_publish",
+        "destructive",
+        "irreversible_migration",
+        "provisioning"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "expired"
+      ],
+      "default": "pending"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "decided_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "evidence": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "approval_id",
+    "action_type",
+    "status"
+  ]
+}

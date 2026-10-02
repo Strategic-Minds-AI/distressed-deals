@@ -1,0 +1,85 @@
+{
+  "name": "RunRecord",
+  "type": "object",
+  "properties": {
+    "run_id": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "generator_id": {
+      "type": "string"
+    },
+    "generator_version": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "validating_input",
+        "planning",
+        "waiting_approval",
+        "queued",
+        "running",
+        "validating",
+        "repairing",
+        "passed",
+        "failed",
+        "blocked",
+        "cancelled",
+        "exported"
+      ],
+      "default": "draft"
+    },
+    "input_hash": {
+      "type": "string"
+    },
+    "seed": {
+      "type": "string"
+    },
+    "dag": {
+      "type": "array",
+      "items": {}
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": {}
+    },
+    "step_logs": {
+      "type": "array",
+      "items": {}
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "cost_credits": {
+      "type": "number",
+      "default": 0
+    },
+    "error": {
+      "type": "string"
+    },
+    "artifact_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "receipt": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "run_id",
+    "project_id",
+    "generator_id",
+    "status"
+  ]
+}

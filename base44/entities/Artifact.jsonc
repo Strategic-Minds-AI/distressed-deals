@@ -1,0 +1,71 @@
+{
+  "name": "Artifact",
+  "type": "object",
+  "properties": {
+    "artifact_id": {
+      "type": "string",
+      "description": "Stable artifact ID (hash-derived)"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "generator_id": {
+      "type": "string"
+    },
+    "generator_version": {
+      "type": "string"
+    },
+    "source_step": {
+      "type": "string",
+      "description": "DAG step that produced this artifact"
+    },
+    "filename": {
+      "type": "string"
+    },
+    "media_type": {
+      "type": "string"
+    },
+    "size_bytes": {
+      "type": "number"
+    },
+    "sha256": {
+      "type": "string"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "validation_state": {
+      "type": "string",
+      "enum": [
+        "not_validated",
+        "validating",
+        "passed",
+        "failed",
+        "blocked"
+      ],
+      "default": "not_validated"
+    },
+    "frozen": {
+      "type": "boolean",
+      "default": false
+    },
+    "storage_uri": {
+      "type": "string"
+    },
+    "content_preview": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "artifact_id",
+    "project_id",
+    "filename",
+    "media_type"
+  ]
+}

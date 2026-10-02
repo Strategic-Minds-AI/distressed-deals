@@ -1,0 +1,75 @@
+{
+  "name": "RegistryEntry",
+  "type": "object",
+  "properties": {
+    "entry_id": {
+      "type": "string",
+      "description": "Stable ID from registry JSON e.g. monetization-templates.001.monthly-subscription"
+    },
+    "name": {
+      "type": "string"
+    },
+    "family": {
+      "type": "string",
+      "description": "Registry family e.g. monetization_templates"
+    },
+    "version": {
+      "type": "string",
+      "default": "1.0.0"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "candidate",
+        "active",
+        "deprecated",
+        "retired"
+      ],
+      "default": "candidate"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "universal",
+        "tenant",
+        "project"
+      ],
+      "default": "universal"
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "risk_class": {
+      "type": "string",
+      "default": "READ_OR_DRAFT"
+    },
+    "approval_required_for_live_effect": {
+      "type": "boolean",
+      "default": true
+    },
+    "validation_requirements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rollback_required": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    },
+    "search_text": {
+      "type": "string",
+      "description": "Concatenated searchable text for $regex queries"
+    }
+  },
+  "required": [
+    "entry_id",
+    "name",
+    "family",
+    "version",
+    "status"
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "name": "CapabilityDefinition",
+  "type": "object",
+  "properties": {
+    "definition_id": {
+      "type": "string",
+      "description": "Stable ID e.g. template.001.monthly-subscription"
+    },
+    "name": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "capability",
+        "template",
+        "generator",
+        "industry_pack",
+        "adapter",
+        "workflow",
+        "policy",
+        "validation_profile",
+        "quality_profile",
+        "provisioning_profile",
+        "runtime_profile",
+        "release_profile",
+        "monetization_profile"
+      ],
+      "default": "capability"
+    },
+    "family": {
+      "type": "string",
+      "description": "Registry family e.g. monetization_templates"
+    },
+    "version": {
+      "type": "string",
+      "default": "1.0.0"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "candidate",
+        "active",
+        "deprecated",
+        "retired"
+      ],
+      "default": "candidate"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "universal",
+        "tenant",
+        "project"
+      ],
+      "default": "universal"
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "inputs": {
+      "type": "array",
+      "items": {}
+    },
+    "outputs": {
+      "type": "array",
+      "items": {}
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {}
+    },
+    "compatibility_tags": {
+      "type": "array",
+      "items": {}
+    },
+    "risk_class": {
+      "type": "string",
+      "enum": [
+        "READ_OR_DRAFT",
+        "SANDBOX",
+        "PROTECTED"
+      ],
+      "default": "READ_OR_DRAFT"
+    },
+    "approval_policy_id": {
+      "type": "string"
+    },
+    "validation_requirements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rollback_required": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "validation_state": {
+      "type": "string",
+      "enum": [
+        "not_validated",
+        "validating",
+        "passed",
+        "failed",
+        "blocked"
+      ],
+      "default": "not_validated"
+    },
+    "approval_state": {
+      "type": "string",
+      "enum": [
+        "not_requested",
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "not_requested"
+    },
+    "frozen_version": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "definition_id",
+    "name",
+    "kind",
+    "version",
+    "status"
+  ]
+}

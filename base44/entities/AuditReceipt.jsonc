@@ -1,0 +1,46 @@
+{
+  "name": "AuditReceipt",
+  "type": "object",
+  "properties": {
+    "receipt_id": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string"
+    },
+    "actor": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string"
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "fail",
+        "blocked",
+        "info"
+      ],
+      "default": "info"
+    },
+    "evidence": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "receipt_id",
+    "event_type",
+    "action",
+    "result"
+  ]
+}
