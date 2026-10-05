@@ -78,23 +78,38 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
   const serviceKey = keys.find((k: any) => k.name === "service_role")?.api_key;
   if (!serviceKey) return { error: "Could not retrieve service_role key" };
 
-  const tablesRes = await fetch(
-    `https://api.supabase.com/v1/projects/${projectRef}/database/query/read-only`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name",
-      }),
+  // Try known table name first, then fall back to schema discovery
+  const candidateTables = ["distressed_properties", "properties", "listings", "deals", "leads"];
+  let propertyTable: string | null = null;
+
+  for (const candidate of candidateTables) {
+    const probeRes = await fetch(
+      `https://${projectRef}.supabase.co/rest/v1/${candidate}?select=id&limit=1`,
+      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+    );
+    if (probeRes.ok) {
+      propertyTable = candidate;
+      break;
     }
-  );
-  const tablesData = await tablesRes.json();
-  const tableNames = (tablesData.rows || []).map((r: any) => r.table_name);
-  const propertyTable =
-    tableNames.find((t: string) => /propert|lead|listing|deal|distress|foreclosure/i.test(t)) || tableNames[0];
+  }
 
   if (!propertyTable) {
-    return { status: "no_source_table", message: "No tables found in Supabase public schema. Populate Supabase with property data to enable sync.", projectRef, tables: [] };
+    // Fall back to schema discovery via management API
+    const tablesRes = await fetch(
+      `https://api.supabase.com/v1/projects/${projectRef}/database/query/read-only`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ query: "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name" }),
+      }
+    );
+    const tablesData = await tablesRes.json();
+    const tableNames = (tablesData.rows || []).map((r: any) => r.table_name);
+    propertyTable = tableNames.find((t: string) => /propert|lead|listing|deal|distress|foreclosure/i.test(t)) || null;
+  }
+
+  if (!propertyTable) {
+    return { status: "no_source_table", message: "No property tables found in Supabase. Populate Supabase with a distressed_properties table to enable sync.", projectRef };
   }
 
   let allRows: any[] = [];
