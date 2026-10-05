@@ -1,4 +1,6 @@
 {
+  "name": "Inventory Pipeline",
+  "description": "Full end-to-end automation: syncs properties from Supabase, validates availability, and cleans inventory every 2 hours",
   "trigger": {
     "condition": null,
     "config": {
@@ -7,10 +9,10 @@
       "schedule_mode": "interval",
       "cron_expression": null,
       "one_time_date": null,
-      "timezone": "UTC",
+      "timezone": "America/New_York",
       "interval_value": 2,
       "interval_unit": "hours",
-      "interval_anchor": "2026-10-02T06:00:00Z",
+      "interval_anchor": "2026-10-05T14:00:00Z",
       "ends_type": "never",
       "ends_on_date": null,
       "ends_after_count": null
@@ -19,27 +21,25 @@
   "definition": {
     "document": {
       "dsl": "1.0.0",
-      "name": "property_sync",
+      "name": "inventory_pipeline",
       "version": "1.0",
       "namespace": "base44"
     },
     "do": [
       {
-        "sync": {
+        "run_pipeline": {
           "call": "invoke_backend_function",
           "with": {
-            "function_name": "syncProperties",
+            "function_name": "runPipeline",
             "args": {}
           },
           "then": "end",
           "x-base44": {
-            "title": "Sync properties from Supabase",
-            "description": "Upserts distressed property inventory"
+            "title": "Run inventory pipeline",
+            "description": "Sync \u2192 Validate \u2192 Clean"
           }
         }
       }
     ]
-  },
-  "name": "Property Sync",
-  "description": "Syncs distressed properties from Supabase every 2 hours to keep inventory fresh"
+  }
 }
