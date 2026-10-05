@@ -13,7 +13,9 @@ export default function InventoryCleaner() {
   const { items: properties, loading, refresh } = useLiveProperties({}, { sort: "-created_date", limit: 500 });
   const [running, setRunning] = useState(false);
   const [validating, setValidating] = useState(false);
+  const [checkingAvail, setCheckingAvail] = useState(false);
   const [report, setReport] = useState(null);
+  const [availReport, setAvailReport] = useState(null);
   const [error, setError] = useState(null);
 
   // Deterministic client-side mirror of inventory health
@@ -33,6 +35,21 @@ export default function InventoryCleaner() {
     });
     return { dupes, noImages, incomplete };
   }, [properties]);
+
+  const runAvailabilityCheck = async () => {
+    setCheckingAvail(true);
+    setError(null);
+    setAvailReport(null);
+    try {
+      const res = await base44.functions.invoke("validateAvailability", {});
+      setAvailReport(res.data);
+      refresh();
+    } catch (e) {
+      setError(e?.response?.data?.error || e?.message || "Availability check failed");
+    } finally {
+      setCheckingAvail(false);
+    }
+  };
 
   const runClean = async (validate = false) => {
     if (validate) setValidating(true); else setRunning(true);
@@ -107,6 +124,14 @@ export default function InventoryCleaner() {
           {validating ? "Validating images…" : "Validate Image URLs"}
         </button>
         <button
+          onClick={runAvailabilityCheck}
+          disabled={running || validating || checkingAvail}
+          className="inline-flex items-center gap-2 border border-border bg-card text-foreground px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-muted transition-colors disabled:opacity-50"
+        >
+          {checkingAvail ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+          {checkingAvail ? "Validating…" : "Validate Availability"}
+        </button>
+        <button
           onClick={refresh}
           className="inline-flex items-center gap-2 border border-border bg-card text-foreground px-4 py-2.5 rounded-lg text-sm hover:bg-muted transition-colors"
         >
@@ -137,6 +162,39 @@ export default function InventoryCleaner() {
             <ReportStat label="Images validated" value={report.validated} />
             <ReportStat label="Status" value="Complete" ok />
           </div>
+        </div>
+      )}
+
+      {/* Availability validation report */}
+      {availReport && (
+        <div className="bg-card border border-border rounded-2xl p-5 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldCheck className="w-5 h-5 text-emerald-600" />
+            <h2 className="font-display text-lg font-semibold text-foreground">Availability Validation Report</h2>
+            <span className="text-xs text-muted-foreground ml-auto">{new Date(availReport.checked_at).toLocaleString()}</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+            <ReportStat label="Properties checked" value={availReport.report.total_checked} />
+            <ReportStat label="Marked Sold" value={availReport.report.marked_sold} />
+            <ReportStat label="Marked Withdrawn" value={availReport.report.marked_withdrawn} />
+            <ReportStat label="Verified available" value={availReport.report.verified_available} ok />
+          </div>
+          {availReport.changes?.length > 0 && (
+            <div className="border-t border-border pt-4">
+              <h3 className="text-sm font-semibold text-foreground mb-2">Status Changes</h3>
+              <div className="space-y-2">
+                {availReport.changes.map((c, i) => (
+                  <div key={i} className="flex items-center gap-3 text-sm">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${c.action === "Sold" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>
+                      {c.action}
+                    </span>
+                    <span className="font-medium text-foreground truncate">{c.title}</span>
+                    <span className="text-muted-foreground text-xs ml-auto truncate">{c.reason}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
