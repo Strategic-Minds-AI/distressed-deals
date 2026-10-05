@@ -141,6 +141,15 @@
     "source_id": {
       "type": "string",
       "description": "External ID from the source system"
+    },
+    "listing_url": {
+      "type": "string",
+      "description": "Source listing URL for availability verification"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time availability was verified by the validation system"
     }
   },
   "required": [

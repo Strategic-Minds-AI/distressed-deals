@@ -32,6 +32,10 @@ function mapRow(row: any): any {
   const images = Array.isArray(row.images) ? row.images : row.image_url ? [row.image_url] : [];
   const sourceId = String(row.id || row.source_id || row.external_id || "");
   const status = row.status || "Active";
+  const listingUrl = row.listing_url || "";
+  const auctionDate = row.auction_date || row.auction ? new Date(row.auction_date || row.auction).toISOString() : undefined;
+  const listedDate = row.listed_date || row.listing_date ? new Date(row.listed_date || row.listing_date).toISOString() : undefined;
+  const featured = Boolean(row.featured || false);
 
   return {
     title, address, city, state, zip,
@@ -43,6 +47,10 @@ function mapRow(row: any): any {
     lat: lat || undefined, lng: lng || undefined,
     images: images.length ? images : [FALLBACK_IMAGE],
     status, source: "supabase", source_id: sourceId,
+    listing_url: listingUrl || undefined,
+    auction_date: auctionDate,
+    listed_date: listedDate,
+    featured,
     last_synced: new Date().toISOString(),
   };
 }
