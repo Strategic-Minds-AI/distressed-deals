@@ -1,32 +1,52 @@
-// Fail-closed suitability screen for the Broward pilot Supabase source.
-// Does not contact the network, infer legal source rights, mutate rows, or merge listings.
-const asText = v => String(v ?? '').trim();
-const validHttpsUrl = value => {
-  try { const u = new URL(asText(value)); return u.protocol === 'https:' && !!u.hostname.includes('.') && !u.username && !u.password; }
-  catch { return false; }
+// Deterministic, fail-closed candidate gate. Never fetches sources, merges properties or asserts source rights.
+const text = v => String(v ?? '').trim();
+const norm = v => text(v).toUpperCase().replace(/[^A-Z0-9]/g, '');
+const https = value => {
+  try {
+    const u = new URL(text(value));
+    return u.protocol === 'https:' && !u.username && !u.password &&
+      !/^(localhost|.*\.localhost|.*\.local|127\.|10\.|192\.168\.|169\.254\.|0\.|\[|::1$)/i.test(u.hostname) &&
+      u.hostname.includes('.');
+  } catch { return false; }
 };
+const parcel = row => norm(row.parcel_id || row.parcel_number || row.folio || row.folio_number || row.apn);
+const zip5 = row => text(row.zip || row.zip_code || row.zipcode || row.postal_code);
 export function screenBrowardSourceRows(rows, {now = Date.now(), ageDays = 30} = {}) {
   if (!Array.isArray(rows)) throw new TypeError('Expected source rows array');
-  if (!Number.isFinite(now) || !Number.isInteger(ageDays) || ageDays < 1 || ageDays > 90) throw new TypeError('Invalid freshness window');
-  const eligible = [], counts = {total:rows.length,florida:0,browardProven:0,freshVerified:0,sourceUrlHttps:0,complete:0,eligible:0};
+  if (!Number.isFinite(now) || !Number.isInteger(ageDays) || ageDays < 1 || ageDays > 90)
+    throw new TypeError('Invalid freshness window');
+  const counts = {total:rows.length,florida:0,browardProven:0,freshVerified:0,
+    sourceUrlHttps:0,complete:0,identityReady:0,duplicatesQuarantined:0,eligible:0};
+  const candidates = [];
   for (const r of rows) {
-    if (!r || typeof r !== 'object') continue;
-    const state = asText(r.state).toUpperCase();
-    if (state !== 'FL') continue;
+    if (!r || typeof r !== 'object' || Array.isArray(r)) continue;
+    if (text(r.state).toUpperCase() !== 'FL') continue;
     counts.florida++;
-    const county = asText(r.county || r.county_name || r.jurisdiction).toUpperCase().replace(/ COUNTY$/,'');
-    if (county !== 'BROWARD') continue;
+    if (text(r.county || r.county_name || r.jurisdiction).toUpperCase().replace(/ COUNTY$/,'') !== 'BROWARD') continue;
     counts.browardProven++;
-    const timestamp = Date.parse(asText(r.verified_at));
-    if (!Number.isFinite(timestamp) || timestamp > now || (now-timestamp) > ageDays * 86400000) continue;
+    const verifiedAt = Date.parse(text(r.verified_at));
+    if (!Number.isFinite(verifiedAt) || verifiedAt > now || now - verifiedAt > ageDays * 86400000) continue;
     counts.freshVerified++;
-    if (!validHttpsUrl(r.listing_url)) continue;
+    if (!https(r.listing_url)) continue;
     counts.sourceUrlHttps++;
-    if (!asText(r.id) || !asText(r.address) || !asText(r.city) || !asText(r.title) ||
-       !Number.isFinite(Number(r.asking_price)) || Number(r.asking_price) <= 0) continue;
+    if (!text(r.id) || !text(r.address) || !text(r.city) || !text(r.title) ||
+        !Number.isFinite(Number(r.asking_price)) || Number(r.asking_price) <= 0) continue;
     counts.complete++;
-    eligible.push(r);
+    // A ZIP code is never a property identity. Broward folio/APN plus full address is required.
+    if (!parcel(r) || !/^\d{5}(?:-\d{4})?$/.test(zip5(r)) ||
+        !/^\d+[A-Za-z]?\s+\S/.test(text(r.address))) continue;
+    counts.identityReady++;
+    candidates.push(r);
   }
+  // Ambiguous duplicate source IDs or same parcel in one batch are quarantined, not silently overwritten.
+  const ids = new Map(), parcels = new Map();
+  for (const r of candidates) {
+    const id = text(r.id), key = parcel(r);
+    ids.set(id, (ids.get(id) || 0) + 1);
+    parcels.set(key, (parcels.get(key) || 0) + 1);
+  }
+  const eligible = candidates.filter(r => ids.get(text(r.id)) === 1 && parcels.get(parcel(r)) === 1);
+  counts.duplicatesQuarantined = candidates.length - eligible.length;
   counts.eligible = eligible.length;
-  return {counts,eligible,rightsVerified:false,sourceProviderRights:'UNVERIFIED'};
+  return {counts, eligible, rightsVerified:false, sourceProviderRights:'UNVERIFIED', autoMerged:0, autoDeleted:0};
 }
