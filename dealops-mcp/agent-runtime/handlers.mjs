@@ -98,12 +98,63 @@ export function executeLocal(profileId,payload={},context={}) {
   if(id==='acquisition.buyer-buy-box-matcher')
     return buyerFit(payload.property,payload.buyers,context);
   if(id==='acquisition.for-you-feed-ranker') {
-    if(!Array.isArray(payload.properties)||payload.properties.length>500)throw Error('INVALID_FEED');
-    const items=payload.properties.filter(p=>p&&p.sourceUseAuthorized===true&&freshness(p.verifiedAt,payload.asOf).verified)
-      .filter(p=>typeof p.propertyId==='string'&&p.propertyId.length>0)
-      .sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0))
-      .slice(0,25).map(p=>({propertyId:p.propertyId,score:Number(p.score)||0,reviewRequired:true}));
-    return {status:'SCREENING_ONLY',items,sourceFreshnessEnforced:true,notOffers:true};
+    // A preview of research candidates, not a live personalized feed or listing.
+    // Trust only tenantId/asOf supplied by the scoped ledger runner; all
+    // property/license/buy-box fields are unverified caller attestations.
+    const hold=reason=>({status:'HOLD_FOR_REVIEW',reason,items:[],
+      sourceFreshnessEnforced:true,reviewRequired:true,sendAllowed:false,
+      notOffers:true,notVerifiedAvailable:true});
+    const tenant=context?.tenantId;
+    const asOf=context?.asOf;
+    if(typeof tenant!=='string'||!tenant.trim()||!finiteDate(asOf))
+      return hold('TENANT_CONTEXT_UNVERIFIED');
+    if(!Array.isArray(payload.properties)||payload.properties.length>500)
+      return hold('INVALID_FEED');
+    const box=payload.buyBox;
+    if(!box||box.tenantId!==tenant||typeof box.id!=='string'||!box.id.trim()||
+       box.buyBoxVerified!==true||!finiteDate(box.buyBoxVerifiedAt)||
+       !freshness(box.buyBoxVerifiedAt,asOf).verified&&
+       Date.parse(asOf)-Date.parse(box.buyBoxVerifiedAt)>90*86400000)
+      return hold('BUY_BOX_UNVERIFIED');
+    const boxTime=Date.parse(box.buyBoxVerifiedAt), now=Date.parse(asOf);
+    if(boxTime>now||now-boxTime>90*86400000||
+       words(box.market)!=='BROWARD'||!Array.isArray(box.types)||
+       box.types.length===0||box.types.length>20||
+       !validMoney(box.maxPurchasePrice)||box.maxPurchasePrice<=0||
+       (box.minPurchasePrice!==undefined&&!validMoney(box.minPurchasePrice))||
+       (box.minPurchasePrice??0)>box.maxPurchasePrice)
+      return hold('BUY_BOX_UNVERIFIED');
+    const identityCounts=new Map();
+    for(const p of payload.properties) {
+      if(!p||p.tenantId!==tenant||words(p.state)!=='FL'||
+         words(p.county)!=='BROWARD'||typeof p.parcelId!=='string'||
+         !p.parcelId.trim())continue;
+      const folio=words(p.parcelId);
+      identityCounts.set(folio,(identityCounts.get(folio)||0)+1);
+    }
+    const items=payload.properties.filter(p=>p&&p.tenantId===tenant&&
+      words(p.state)==='FL'&&words(p.county)==='BROWARD'&&
+      typeof p.parcelId==='string'&&p.parcelId.trim()&&
+      identityCounts.get(words(p.parcelId))===1&&
+      typeof p.propertyId==='string'&&p.propertyId.trim()&&
+      p.sourceUseAuthorized===true&&
+      typeof p.rightsEvidenceId==='string'&&p.rightsEvidenceId.trim().length>=6&&
+      typeof p.sourceUrl==='string'&&/^https:\/\//i.test(p.sourceUrl)&&
+      freshness(p.verifiedAt,asOf).verified&&
+      words(p.market)===words(box.market)&&
+      box.types.some(t=>words(t)===words(p.type))&&
+      validMoney(p.estimatedPrice)&&p.estimatedPrice>0&&
+      p.estimatedPrice>=(box.minPurchasePrice??0)&&
+      p.estimatedPrice<=box.maxPurchasePrice&&
+      typeof p.score==='number'&&Number.isFinite(p.score)&&
+      p.score>=0&&p.score<=100)
+      .sort((a,b)=>b.score-a.score||a.propertyId.localeCompare(b.propertyId))
+      .slice(0,25).map(p=>({propertyId:p.propertyId,score:p.score,
+        reviewRequired:true,listingAvailabilityVerified:false}));
+    return {status:'SCREENING_ONLY',items,sourceFreshnessEnforced:true,
+      tenantScoped:true,buyBoxResearchOnly:true,reviewRequired:true,
+      sendAllowed:false,notOffers:true,notVerifiedAvailable:true,
+      note:'Caller-attested source rights and buy box are not independently certified. Agent review, authenticated user ownership, current availability and source-rights verification remain required.'};
   }
   if(id==='communications.opt-out-and-dnc-guard') {
     const classification=classifyInboundText(payload.text||'');
