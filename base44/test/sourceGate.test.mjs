@@ -1,36 +1,44 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {screenBrowardSourceRows} from '../shared/sourceGate.js';
-const now=Date.UTC(2026,10,12);
-const good=()=>({id:1,title:'Example',address:'123 Main St',city:'Fort Lauderdale',state:'FL',county:'Broward',
- verified_at:'2026-11-11T00:00:00Z',listing_url:'https://public.example.org/property/1',asking_price:170000});
+const now=Date.UTC(2026,10,13,5);
+const good=()=>({id:1,title:'Fixture property',address:'123 Main St Unit 2',city:'Fort Lauderdale',state:'FL',zip:'33301',county:'Broward',parcel_id:'5042-10-00-0001',
+ verified_at:'2026-11-12T00:00:00Z',listing_url:'https://county.example.org/property/1',asking_price:170000});
 const screen=rows=>screenBrowardSourceRows(rows,{now});
-test('good fixture is suitable for manual source-rights review, not auto-authorized',()=>{
- const r=screen([good()]);assert.equal(r.counts.eligible,1);assert.equal(r.rightsVerified,false);
+test('valid Broward parcel and full address only qualify for rights review',()=>{
+ const r=screen([good()]);assert.equal(r.counts.eligible,1);assert.equal(r.rightsVerified,false);assert.equal(r.autoMerged,0);
 });
-test('no county/jurisdiction proof is quarantined, even in Fort Lauderdale',()=>{
- const x=good();delete x.county;const r=screen([x]);assert.equal(r.counts.eligible,0);assert.equal(r.counts.browardProven,0);
+test('county and state identity are mandatory',()=>{
+ assert.equal(screen([{...good(),county:''},{...good(),county:'Miami-Dade'},{...good(),state:'GA'}]).counts.eligible,0);
 });
-test('matching ZIP or city without county proof is inadequate',()=>{
- const x={...good(),county:'Miami-Dade',zip:'33301'};assert.equal(screen([x]).counts.eligible,0);
+test('stale, future, missing verification denied',()=>{
+ assert.equal(screen([{...good(),verified_at:'2025-01-01'},{...good(),verified_at:'2026-11-20'},{...good(),verified_at:null}]).counts.eligible,0);
 });
-test('old verification and future timestamps are rejected',()=>{
- const a={...good(),verified_at:'2025-01-01T00:00:00Z'};
- const b={...good(),verified_at:'2026-11-13T00:00:00Z'};
- assert.equal(screen([a,b]).counts.eligible,0);
+test('invalid source evidence URLs denied',()=>{
+ assert.equal(screen([{...good(),listing_url:'http://example.org'},{...good(),listing_url:'https://localhost:8000/a'},{...good(),listing_url:'https://10.0.0.1/property'},{...good(),listing_url:''}]).counts.eligible,0);
 });
-test('missing source URL or HTTP/private URL is rejected',()=>{
- const a={...good(),listing_url:''},b={...good(),listing_url:'http://localhost:3000/secret'};
- assert.equal(screen([a,b]).counts.eligible,0);
+test('no parcel, no complete address or ZIP means no identity',()=>{
+ const variants=[{parcel_id:''},{address:'Main St'},{zip:''},{zip:'3330'}, {address:''}];
+ assert.equal(screen(variants.map(x=>({...good(),...x}))).counts.eligible,0);
 });
-test('non-Florida rows are excluded',()=>{
- assert.equal(screen([{...good(),state:'GA'}]).counts.eligible,0);
+test('distinct parcels in same ZIP are not auto-merged or quarantined',()=>{
+ const r=screen([good(), {...good(),id:2,parcel_id:'5042-10-00-0002',address:'125 Main St Unit 3'}]);
+ assert.equal(r.counts.eligible,2);assert.equal(r.counts.duplicatesQuarantined,0);
 });
-test('price and address are required, no fabricated asking price',()=>{
- assert.equal(screen([{...good(),asking_price:0},{...good(),address:''}]).counts.eligible,0);
+test('same parcel across different source rows quarantines both',()=>{
+ const r=screen([good(),{...good(),id:2,address:'999 Different St'}]);
+ assert.equal(r.counts.eligible,0);assert.equal(r.counts.duplicatesQuarantined,2);
 });
-test('no mutation and expected counts across mixed sources',()=>{
- const x=good(),y={...good(),id:2,county:''};const before=JSON.stringify([x,y]);const r=screen([x,y]);
- assert.equal(r.counts.total,2);assert.equal(r.counts.florida,2);assert.equal(r.counts.eligible,1);
- assert.equal(JSON.stringify([x,y]),before);
+test('same source ID with conflicting parcels quarantines both',()=>{
+ const r=screen([good(),{...good(),parcel_id:'5042-10-00-0002'}]);
+ assert.equal(r.counts.eligible,0);assert.equal(r.counts.duplicatesQuarantined,2);
+});
+test('same-ZIP ambiguity never generates a write action; source is not modified',()=>{
+ const rows=[good(), {...good(),id:2,parcel_id:'5042-10-00-0002',address:'125 Main St'}];
+ const snapshot=JSON.stringify(rows),r=screen(rows);
+ assert.equal(JSON.stringify(rows),snapshot);assert.equal(r.autoDeleted,0);assert.equal(r.autoMerged,0);
+});
+test('incorrect freshness window and input shape fail',()=>{
+ assert.throws(()=>screenBrowardSourceRows({}, {now}),TypeError);
+ assert.throws(()=>screenBrowardSourceRows([], {now,ageDays:100}),TypeError);
 });
