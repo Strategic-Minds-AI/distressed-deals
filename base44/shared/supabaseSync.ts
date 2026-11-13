@@ -69,6 +69,25 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
     offset += pageSize;
   }
 
+  // Detect incompatible source schema early. The pinned project may exist yet be
+  // structurally incapable of proving county or parcel identity. No data mutations.
+  if (allRows.length) {
+    const columns = new Set(Object.keys(allRows[0]));
+    const missingColumns = [
+      [['county','county_name','jurisdiction'],'county'],
+      [['parcel_id','parcel_number','folio','folio_number','apn'],'parcel_id'],
+      [['verified_at'],'verified_at'],
+      [['listing_url'],'listing_url'],
+      [['zip','zip_code','zipcode','postal_code'],'zip']
+    ].filter(([alternates]) => !alternates.some(name => columns.has(name)))
+     .map(([,label]) => label);
+    if (missingColumns.length) {
+      return { status: 'source_schema_incomplete', projectRef, table: propertyTable,
+        missingColumns, rawRows: allRows.length, created: 0, updated: 0,
+        deleted: 0, no_records_changed: true };
+    }
+  }
+
   // The source table exists but may contain other counties, old listings or records
   // with no verified right to use. Do not materialize them into live inventory.
   const screening = screenBrowardSourceRows(allRows);
