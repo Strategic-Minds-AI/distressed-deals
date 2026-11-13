@@ -40,6 +40,11 @@ test('incompatible real source schema with missing parcel/county is a hard failu
  assert.equal(x.healthy,false);assert.equal(x.code,'SOURCE_SCHEMA_INCOMPLETE');
 });
 
+test('ambiguous provider upsert outcome blocks productive sync',()=>{
+ const x=assessSyncResponse(200,{status:'upsert_receipt_unverified',projectRef:PROPERTY_PROJECT_REF,table:PROPERTY_TABLE,writeOutcome:'UNKNOWN'});
+ assert.equal(x.healthy,false);assert.equal(x.code,'UPSERT_RECEIPT_UNVERIFIED');
+});
+
 test('unconfirmed or partial upsert is never evidence of productive sync',()=>{
  assert.equal(assessSyncResponse(200,{...good(),created:0,updated:0}).code,'UNTRUSTWORTHY_COUNTS');
  assert.equal(assessSyncResponse(200,{...good(),created:2,updated:1}).code,'UNTRUSTWORTHY_COUNTS');
