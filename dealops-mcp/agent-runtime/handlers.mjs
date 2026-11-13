@@ -112,9 +112,7 @@ export function executeLocal(profileId,payload={},context={}) {
       return hold('INVALID_FEED');
     const box=payload.buyBox;
     if(!box||box.tenantId!==tenant||typeof box.id!=='string'||!box.id.trim()||
-       box.buyBoxVerified!==true||!finiteDate(box.buyBoxVerifiedAt)||
-       !freshness(box.buyBoxVerifiedAt,asOf).verified&&
-       Date.parse(asOf)-Date.parse(box.buyBoxVerifiedAt)>90*86400000)
+       box.buyBoxVerified!==true||!finiteDate(box.buyBoxVerifiedAt))
       return hold('BUY_BOX_UNVERIFIED');
     const boxTime=Date.parse(box.buyBoxVerifiedAt), now=Date.parse(asOf);
     if(boxTime>now||now-boxTime>90*86400000||
@@ -124,8 +122,10 @@ export function executeLocal(profileId,payload={},context={}) {
        (box.minPurchasePrice!==undefined&&!validMoney(box.minPurchasePrice))||
        (box.minPurchasePrice??0)>box.maxPurchasePrice)
       return hold('BUY_BOX_UNVERIFIED');
-    const identityCounts=new Map();
+    const identityCounts=new Map(), propertyIdCounts=new Map();
     for(const p of payload.properties) {
+      if(p&&p.tenantId===tenant&&typeof p.propertyId==='string'&&p.propertyId.trim())
+        propertyIdCounts.set(p.propertyId,(propertyIdCounts.get(p.propertyId)||0)+1);
       if(!p||p.tenantId!==tenant||words(p.state)!=='FL'||
          words(p.county)!=='BROWARD'||typeof p.parcelId!=='string'||
          !p.parcelId.trim())continue;
@@ -137,6 +137,7 @@ export function executeLocal(profileId,payload={},context={}) {
       typeof p.parcelId==='string'&&p.parcelId.trim()&&
       identityCounts.get(words(p.parcelId))===1&&
       typeof p.propertyId==='string'&&p.propertyId.trim()&&
+      propertyIdCounts.get(p.propertyId)===1&&
       p.sourceUseAuthorized===true&&
       typeof p.rightsEvidenceId==='string'&&p.rightsEvidenceId.trim().length>=6&&
       typeof p.sourceUrl==='string'&&/^https:\/\//i.test(p.sourceUrl)&&
