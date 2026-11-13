@@ -29,7 +29,7 @@ export function assessSyncResponse(httpStatus, payload, options = {}) {
   }
   if (!validCount(payload.mapped) || !validCount(payload.rawRows) || payload.rawRows < payload.mapped ||
       !validCount(payload.created) || !validCount(payload.updated) ||
-      payload.created + payload.updated > payload.mapped) {
+      payload.created + payload.updated !== payload.mapped) {
     return blocked('UNTRUSTWORTHY_COUNTS','source counts do not reconcile');
   }
   if (payload.deleted !== undefined && payload.deleted !== 0) {
