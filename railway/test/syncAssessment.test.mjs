@@ -50,3 +50,12 @@ test('unconfirmed or partial upsert is never evidence of productive sync',()=>{
  assert.equal(assessSyncResponse(200,{...good(),created:2,updated:1}).code,'UNTRUSTWORTHY_COUNTS');
  assert.equal(assessSyncResponse(200,{...good(),created:2,updated:4}).code,'UNTRUSTWORTHY_COUNTS');
 });
+
+test('scoped source read denial and provider failure are not healthy',()=>{
+ const forbidden=assessSyncResponse(200,{status:'source_read_denied'});
+ assert.equal(forbidden.healthy,false);
+ assert.equal(forbidden.code,'SOURCE_READER_DENIED');
+ const error=assessSyncResponse(200,{status:'source_read_error'});
+ assert.equal(error.healthy,false);
+ assert.equal(error.code,'SOURCE_READER_ERROR');
+});
