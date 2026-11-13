@@ -26,3 +26,7 @@ Idempotency prevents duplicate work; local work is leased for bounded periods; e
 ## Gate: production
 
 Provider permissions, actual authorized data freshness, authenticated MCP transport, tenant isolation, agent legal authority, frontend user journeys, communications consent, independent Guardian, rollback and actual runtime receipts remain required before production.
+
+## Actual Broward source quality run
+
+An authorized Supabase read (project `fwtchbsebygwifmmqhur`) was transformed into a non-PII local snapshot file `C:\_Strategic_Minds_AI_OS\02_Active_Builds\PROPERTY_DEAL_OS\broward-source-metadata-20261112.json`. The one-off command `node agent-runtime/audit-file.mjs <local-snapshot-json>` enqueues and completes internal freshness checks on the existing local mirror; it does not search, identify contacts, send messages, or mark properties as currently available. The first readback audited 18 historic Broward records: zero recent, eight stale and ten missing date, digest `cfb753c7321040ab54fba4f8e20d40a92c23c5e01b294afbda71338c77effd5a`. As of this revision the combined local test suite is 43 PASS, 0 FAIL. The canonical X1 mission remains blocked pending fresh lawful sources and worker integration.
