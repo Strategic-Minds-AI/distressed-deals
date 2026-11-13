@@ -9,7 +9,7 @@ export function runOne(ledger,{tenantId,missionId,workerId='property-local-safe'
   if(work.state==='WAITING_PROVIDER')
     return {id:work.id,profileId:work.profile_id,state:'WAITING_PROVIDER',processed:0,detail:'Verified provider adapter or human authority is missing; no external action taken'};
   try{
-    const output=executeLocal(work.profile_id,work.payload);
+    const output=executeLocal(work.profile_id,work.payload,{tenantId,missionId,asOf:new Date().toISOString()});
     if(output.status==='WAITING_PROVIDER')
       return {id:work.id,...ledger.fail(tenantId,missionId,work.id,workerId,'UNVERIFIED_ADAPTER'),processed:0};
     return {id:work.id,profileId:work.profile_id,processed:1,
