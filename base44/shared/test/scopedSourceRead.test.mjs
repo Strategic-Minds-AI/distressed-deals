@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildScopedSourceRead,classifySourceReadFailure,PINNED_PROJECT_REF} from '../shared/scopedSourceRead.mjs';
+import {buildScopedSourceRead,classifySourceReadFailure,PINNED_PROJECT_REF} from '../scopedSourceRead.js';
 const fakeJwt = (claims) => 'test.' + Buffer.from(JSON.stringify(claims)).toString('base64url') + '.signature';
 const now=Date.parse('2026-11-13T06:00:00Z');
 const valid={projectRef:PINNED_PROJECT_REF,table:'distressed_properties',apiKey:'sb_publishable_example',
