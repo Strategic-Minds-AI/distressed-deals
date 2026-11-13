@@ -1,13 +1,18 @@
 import { createInterface } from 'node:readline';
+import { existsSync } from 'node:fs';
+import { BASE_ROLES, summarizeCatalog } from './agent-runtime/catalog.mjs';
+import { openLedger } from './agent-runtime/ledger.mjs';
 
 // Local stdio MCP adapter. No second scheduler, no inbound network port, no writes.
 // Deploy/attach to ChatGPT only after the authenticated tool path passes Guardian QA.
-const SERVER = { name: 'property-deal-os', version: '0.1.0' };
+const SERVER = { name: 'property-deal-os', version: '0.2.0' };
 const PROTOCOL = '2025-11-25';
 const TOOL_SPECS = [
   { name: 'dealops_status', description: 'Read-only capability and configuration health for the existing property system.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
   { name: 'dealops_policy', description: 'List authorization gates for offers, communications, title, closing, and paid actions.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
-  { name: 'dealops_preview_properties', description: 'Preview up to 25 Florida property record metadata rows; no contact PII and no writes.', inputSchema: { type: 'object', properties: { limit: { type: 'integer', minimum: 1, maximum: 25 } }, additionalProperties: false } }
+  { name: 'dealops_preview_properties', description: 'Preview up to 25 Florida property record metadata rows; no contact PII and no writes.', inputSchema: { type: 'object', properties: { limit: { type: 'integer', minimum: 1, maximum: 25 } }, additionalProperties: false } },
+  { name: 'dealops_agent_catalog', description: 'List bounded original property agent definitions and whether handlers exist. Configured roles are not autonomous live agents.', inputSchema: { type: 'object', properties: { limit: { type: 'integer', minimum: 1, maximum: 25 }, offset: { type: 'integer', minimum: 0 } }, additionalProperties: false } },
+  { name: 'dealops_local_checkpoint', description: 'Read a local non-PII mission checkpoint only when local owner-scoped access is explicitly enabled.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } }
 ];
 const info = {
   policy_version: 'fl-pilot-v1',
@@ -71,6 +76,18 @@ async function invoke(name, args) {
     }
     case 'dealops_policy': return asContent(info);
     case 'dealops_preview_properties': return preview(args);
+    case 'dealops_agent_catalog': {
+      const limit = Number(args?.limit ?? 10), offset=Number(args?.offset ?? 0);
+      if(!Number.isInteger(limit)||limit<1||limit>25||!Number.isInteger(offset)||offset<0||offset>1000)
+        return asContent({error:'INVALID_PAGINATION'},true);
+      return asContent({status:'DEFINITIONS_ONLY',summary:summarizeCatalog(),items:BASE_ROLES.slice(offset,offset+limit),nextOffset:offset+limit<BASE_ROLES.length?offset+limit:null});
+    }
+    case 'dealops_local_checkpoint': {
+      if(process.env.DEALOPS_LOCAL_READ_ENABLED!=='true'||!process.env.DEALOPS_STATE_DB||!existsSync(process.env.DEALOPS_STATE_DB))
+        return asContent({status:'LOCAL_CONTINUITY_NOT_AUTHORIZED_OR_MISSING'},true);
+      const ledger=openLedger(process.env.DEALOPS_STATE_DB);
+      try{return asContent(ledger.snapshot('strategic-minds-ai','property-deal-os:broward-pilot:v1'));}finally{ledger.close();}
+    }
     default: return asContent({ error: 'Unknown tool' }, true);
   }
 }
