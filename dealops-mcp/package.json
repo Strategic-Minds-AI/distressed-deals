@@ -1,0 +1,14 @@
+{
+  "name": "@strategic-minds/property-deal-os-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local read-only MCP adapter for existing X1 property intelligence; no duplicate scheduler",
+  "scripts": {
+    "test": "node --test",
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
