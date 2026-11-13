@@ -6,6 +6,7 @@
 import { secrets } from 'base44:runtime';
 import { screenBrowardSourceRows } from './sourceGate.js';
 import { mapScreenedSourceRow } from './propertySourceMap.js';
+import { reconcilePropertyUpsertReceipt } from './upsertReceipt.js';
 
 export async function syncSupabaseToEntities(base44: any): Promise<any> {
   let connection;
@@ -129,6 +130,15 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
     return { error: "Source identifier missing; inventory preserved", table: propertyTable };
   }
   const result = await base44.asServiceRole.entities.Property.upsert(mapped, { key: "source_id" });
+  const receipt = reconcilePropertyUpsertReceipt(result, mapped.length);
+  if (!receipt.verified) {
+    // Upsert may have run, but its outcome is not confirmed. Never claim success or
+    // silently create/remove source rows; operator must reconcile before release.
+    return { status: 'upsert_receipt_unverified', projectRef, table: propertyTable,
+      reason: receipt.reason, rawRows: allRows.length, mapped: mapped.length,
+      freshVerifiedCount: mapped.length, sourceRightsConfirmed: true,
+      writeOutcome: 'UNKNOWN', deletionReported: 'UNKNOWN' };
+  }
 
   return {
     status: "synced",
@@ -139,7 +149,7 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
     deleted: 0,
     rawRows: allRows.length,
     mapped: mapped.length,
-    created: result.created || result.length || 0,
-    updated: result.updated || 0,
+    created: receipt.created,
+    updated: receipt.updated,
   };
 }
