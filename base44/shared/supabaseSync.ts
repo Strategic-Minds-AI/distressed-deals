@@ -7,36 +7,37 @@ import { secrets } from 'base44:runtime';
 import { screenBrowardSourceRows } from './sourceGate.js';
 import { mapScreenedSourceRow } from './propertySourceMap.js';
 import { reconcilePropertyUpsertReceipt } from './upsertReceipt.js';
+import { buildScopedSourceRead, classifySourceReadFailure } from './scopedSourceRead.js';
 
 export async function syncSupabaseToEntities(base44: any): Promise<any> {
-  let connection;
+  // No management API token or project-wide service_role key. Both credentials
+  // are owner-configured secrets. The bearer must be authenticated, unexpired,
+  // project-issued and constrained by Supabase RLS for this approved source.
+  const projectRef = secrets.get('PROPERTY_SUPABASE_PROJECT_REF');
+  const propertyTable = secrets.get('PROPERTY_SOURCE_TABLE') || 'distressed_properties';
+  let read;
   try {
-    connection = await base44.asServiceRole.connectors.getConnection("supabase");
-  } catch {
-    return { error: "Supabase connector not connected" };
+    read = buildScopedSourceRead({
+      projectRef,
+      table: propertyTable,
+      apiKey: secrets.get('PROPERTY_SUPABASE_READ_ONLY_API_KEY'),
+      accessToken: secrets.get('PROPERTY_SUPABASE_READ_ONLY_BEARER')
+    });
+  } catch (err) {
+    return {
+      status: 'source_read_denied', reason: err?.code || 'READ_POLICY_UNKNOWN',
+      projectRef: 'REDACTED_UNTIL_PINNED', table: propertyTable,
+      created: 0, updated: 0, deleted: 0, no_records_changed: true
+    };
   }
-  const accessToken = connection.accessToken;
-
-  // Use an explicit project. Selecting projects[0] silently reads the wrong tenant.
-  const projectRef = secrets.get("PROPERTY_SUPABASE_PROJECT_REF");
-  if (!projectRef || !/^[a-z0-9]{20}$/.test(projectRef)) {
-    return { error: "PROPERTY_SUPABASE_PROJECT_REF must be configured securely" };
+  const probeRes = await fetch(`${read.endpoint}?select=id&limit=1`, { headers: read.headers });
+  if (!probeRes.ok) {
+    return {
+      status: classifySourceReadFailure(probeRes.status),
+      reason: 'pinned_source_probe_failed', projectRef: read.projectRef, table: read.table,
+      created: 0, updated: 0, deleted: 0, no_records_changed: true
+    };
   }
-  const projectsRes = await fetch("https://api.supabase.com/v1/projects", {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (!projectsRes.ok) return { error: "Supabase project authorization failed" };
-  const projects = await projectsRes.json();
-  if (!Array.isArray(projects) || !projects.some((p: any) => p.id === projectRef)) {
-    return { error: "Configured property project is not authorized for this connector" };
-  }
-
-  const keysRes = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/api-keys`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  const keys = await keysRes.json();
-  const serviceKey = keys.find((k: any) => k.name === "service_role")?.api_key;
-  if (!serviceKey) return { error: "Could not retrieve service_role key" };
 
   // Fail closed on unexpected tables; never scan unrelated CRM or tenant tables.
   const propertyTable = secrets.get("PROPERTY_SOURCE_TABLE") || "distressed_properties";
@@ -57,12 +58,13 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
   let hasMore = true;
   while (hasMore) {
     const res = await fetch(
-      `https://${projectRef}.supabase.co/rest/v1/${propertyTable}?select=*&order=id.asc&limit=${pageSize}&offset=${offset}`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+      `${read.endpoint}?select=*&order=id.asc&limit=${pageSize}&offset=${offset}`,
+      { headers: read.headers }
     );
     if (!res.ok) {
-      const text = await res.text();
-      return { error: `PostgREST ${res.status}: ${text}`, table: propertyTable };
+      return { status: classifySourceReadFailure(res.status),
+        reason: 'pinned_source_page_failed', projectRef: read.projectRef, table: propertyTable,
+        created: 0, updated: 0, deleted: 0, no_records_changed: true };
     }
     const rows = await res.json();
     allRows = allRows.concat(rows);
