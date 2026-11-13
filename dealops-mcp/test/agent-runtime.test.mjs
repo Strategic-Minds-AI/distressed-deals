@@ -51,13 +51,73 @@ test('For You agent shows only authorized recent evidence and never presents an 
   ]});
   assert.deepEqual(x.items.map(p=>p.propertyId),['fresh']);assert.equal(x.notOffers,true);
 });
-test('cash buyer matching uses buyer criteria, does not verify funds',()=>{
-  const x=executeLocal('acquisition.buyer-buy-box-matcher@broward',{property:{market:'Broward',type:'single_family',estimatedPrice:200000},
-    buyers:[{id:'yes',market:'Broward',types:['single_family'],maxPurchasePrice:250000,buyBoxVerified:true},
-            {id:'no-budget',market:'Broward',types:['single_family'],maxPurchasePrice:150000,buyBoxVerified:true},
-            {id:'unverified',market:'Broward',maxPurchasePrice:250000,buyBoxVerified:false}]});
+const buyerAsOf='2026-11-13T08:00:00Z';
+const buyerProperty={tenantId:TENANT,market:'Broward',county:'Broward',state:'FL',parcelId:'123-0001',
+  type:'single_family',estimatedPrice:200000,sourceUseAuthorized:true,
+  rightsEvidenceId:'source-permission-test',sourceUrl:'https://example.gov/parcel/fixture',
+  verifiedAt:'2026-11-12T18:00:00Z'};
+const buyerContext={tenantId:TENANT,asOf:buyerAsOf};
+const buyerBoxes=[
+  {id:'yes',tenantId:TENANT,market:'Broward',types:['single_family'],maxPurchasePrice:250000,
+   buyBoxVerified:true,buyBoxVerifiedAt:'2026-11-12T08:00:00Z'},
+  {id:'no-budget',tenantId:TENANT,market:'Broward',types:['single_family'],maxPurchasePrice:150000,
+   buyBoxVerified:true,buyBoxVerifiedAt:'2026-11-12T08:00:00Z'},
+  {id:'unverified',tenantId:TENANT,market:'Broward',types:['single_family'],maxPurchasePrice:250000,
+   buyBoxVerified:false,buyBoxVerifiedAt:'2026-11-12T08:00:00Z'}
+];
+test('cash buyer matching is tenant-scoped criteria research, never funding verification or contact',()=>{
+  const x=executeLocal('acquisition.buyer-buy-box-matcher@broward',
+    {property:buyerProperty,buyers:buyerBoxes},buyerContext);
   assert.deepEqual(x.buyerMatches.map(y=>y.buyerProfileId),['yes']);
   assert.equal(x.buyerMatches[0].fundingVerified,false);
+  assert.equal(x.buyerMatches[0].contactAuthorized,false);
+  assert.equal(x.sendAllowed,false);
+});
+test('missing or forged tenant context produces no buyer matches',()=>{
+  const profile='acquisition.buyer-buy-box-matcher@broward';
+  for(const context of [{},{tenantId:'other-tenant',asOf:buyerAsOf}]){
+    const r=executeLocal(profile,{property:buyerProperty,buyers:buyerBoxes},context);
+    assert.equal(r.status,'HOLD_FOR_REVIEW');
+    assert.equal(r.buyerMatches.length,0);
+  }
+  const other={...buyerBoxes[0],id:'other',tenantId:'other-tenant'};
+  const r=executeLocal(profile,{property:buyerProperty,buyers:[other]},buyerContext);
+  assert.equal(r.buyerMatches.length,0);
+});
+test('unverified source rights, stale folios, missing prices and wrong county block matching',()=>{
+  const profile='acquisition.buyer-buy-box-matcher@broward';
+  const scenarios=[
+    {...buyerProperty,sourceUseAuthorized:false},
+    {...buyerProperty,rightsEvidenceId:''},
+    {...buyerProperty,verifiedAt:'2026-09-01T00:00:00Z'},
+    {...buyerProperty,county:'Miami-Dade'},
+    {...buyerProperty,parcelId:''},
+    {...buyerProperty,estimatedPrice:null}
+  ];
+  for(const property of scenarios){
+    const r=executeLocal(profile,{property,buyers:buyerBoxes},buyerContext);
+    assert.equal(r.status,'HOLD_FOR_REVIEW');
+    assert.deepEqual(r.buyerMatches,[]);
+  }
+});
+test('incomplete, expired, contradictory or out-of-tenant buy boxes never match',()=>{
+  const profile='acquisition.buyer-buy-box-matcher@broward';
+  const base=buyerBoxes[0];
+  const cases=[
+    {...base,types:[]},{...base,maxPurchasePrice:undefined},
+    {...base,buyBoxVerifiedAt:'2026-01-01T00:00:00Z'},
+    {...base,minPurchasePrice:260000,maxPurchasePrice:250000},
+    {...base,market:'Palm Beach'},{...base,id:'other',tenantId:'other-tenant'}
+  ];
+  for(const item of cases) {
+    const r=executeLocal(profile,{property:buyerProperty,buyers:[item]},buyerContext);
+    assert.deepEqual(r.buyerMatches,[]);
+  }
+});
+test('duplicate eligible buy-box IDs are reduced to one deterministic internal match',()=>{
+  const r=executeLocal('acquisition.buyer-buy-box-matcher@broward',
+    {property:buyerProperty,buyers:[buyerBoxes[0],buyerBoxes[0]]},buyerContext);
+  assert.deepEqual(r.buyerMatches.map(x=>x.buyerProfileId),['yes']);
 });
 test('only deterministic strategy screening, no automatic assignment',()=>{
  const r=executeLocal('underwriting.wholesale-assignment-screen@broward',{metrics:{contractPrice:150000,endBuyerPrice:170000,transactionCosts:5500}});
