@@ -39,3 +39,9 @@ test('incompatible real source schema with missing parcel/county is a hard failu
  const x=assessSyncResponse(200,{status:'source_schema_incomplete',missingColumns:['county','parcel_id'],projectRef:PROPERTY_PROJECT_REF,table:PROPERTY_TABLE});
  assert.equal(x.healthy,false);assert.equal(x.code,'SOURCE_SCHEMA_INCOMPLETE');
 });
+
+test('unconfirmed or partial upsert is never evidence of productive sync',()=>{
+ assert.equal(assessSyncResponse(200,{...good(),created:0,updated:0}).code,'UNTRUSTWORTHY_COUNTS');
+ assert.equal(assessSyncResponse(200,{...good(),created:2,updated:1}).code,'UNTRUSTWORTHY_COUNTS');
+ assert.equal(assessSyncResponse(200,{...good(),created:2,updated:4}).code,'UNTRUSTWORTHY_COUNTS');
+});
