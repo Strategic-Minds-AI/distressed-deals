@@ -32,18 +32,51 @@ function freshness(verifiedAt,asOf) {
   if(ageDays>30)return {verified:false,reason:'STALE_SOURCE',ageDays};
   return {verified:true,reason:'RECENT_SOURCE_DATE_ONLY',ageDays};
 }
-function buyerFit(property,buyers=[]) {
-  if(!property||!Array.isArray(buyers)||buyers.length>200)throw Error('INVALID_BUYER_INPUT');
-  return buyers.filter(x=>{
-    if(!x||typeof x.id!=='string'||!x.buyBoxVerified)return false;
-    if(x.market&&words(x.market)!==words(property.market))return false;
-    if(Array.isArray(x.types)&&x.types.length&&!x.types.includes(property.type))return false;
-    if(validMoney(x.maxPurchasePrice)&&validMoney(property.estimatedPrice)&&property.estimatedPrice>x.maxPurchasePrice)return false;
-    if(validMoney(x.minPurchasePrice)&&validMoney(property.estimatedPrice)&&property.estimatedPrice<x.minPurchasePrice)return false;
-    return true;
-  }).map(x=>({buyerProfileId:x.id,match:'BUY_BOX_ONLY',fundingVerified:false}));
+function buyerFit(property,buyers=[],context={}) {
+  // Deterministic, offline research match, not permission to contact a buyer.
+  // tenantId comes from the local ledger runner, never from an investor-supplied payload.
+  const hold=(reason)=>({status:'HOLD_FOR_REVIEW',reason,buyerMatches:[],reviewRequired:true,
+    notVerifiedAsCashBuyers:true,sendAllowed:false});
+  if(!property||!Array.isArray(buyers)||buyers.length>200) return hold('INVALID_BUYER_INPUT');
+  const tenant=context?.tenantId;
+  if(typeof tenant!=='string'||!tenant.trim()||property.tenantId!==tenant)
+    return hold('TENANT_CONTEXT_UNVERIFIED');
+  const asOf=typeof context.asOf==='string' ? Date.parse(context.asOf):Date.now();
+  const recent=(date,maxDays)=>{
+    const t=typeof date==='string'?Date.parse(date):NaN;
+    return Number.isFinite(asOf)&&Number.isFinite(t)&&t<=asOf&&asOf-t<=maxDays*86400000;
+  };
+  if(words(property.state)!=='FL'||words(property.county)!=='BROWARD'||
+     typeof property.parcelId!=='string'||!property.parcelId.trim())
+    return hold('BROWARD_PARCEL_UNVERIFIED');
+  if(property.sourceUseAuthorized!==true||
+     typeof property.rightsEvidenceId!=='string'||property.rightsEvidenceId.trim().length<6||
+     typeof property.sourceUrl!=='string'||!/^https:\/\//i.test(property.sourceUrl)||
+     !recent(property.verifiedAt,30))
+    return hold('SOURCE_EVIDENCE_UNVERIFIED');
+  const market=words(property.market),type=words(property.type),price=property.estimatedPrice;
+  if(!market||!type||!validMoney(price)||price<=0)
+    return hold('PROPERTY_BUY_BOX_FIELDS_MISSING');
+  const matched=new Map();
+  for(const buyer of buyers) {
+    if(!buyer||typeof buyer.id!=='string'||!buyer.id.trim()||
+       buyer.tenantId!==tenant||buyer.buyBoxVerified!==true||
+       !recent(buyer.buyBoxVerifiedAt,90)||
+       words(buyer.market)!==market||
+       !Array.isArray(buyer.types)||!buyer.types.some(t=>words(t)===type)||
+       !validMoney(buyer.maxPurchasePrice)||buyer.maxPurchasePrice<=0||
+       (buyer.minPurchasePrice!==undefined&&!validMoney(buyer.minPurchasePrice)))continue;
+    const min=buyer.minPurchasePrice??0;
+    if(min>buyer.maxPurchasePrice||price<min||price>buyer.maxPurchasePrice)continue;
+    matched.set(buyer.id,{buyerProfileId:buyer.id,match:'BUY_BOX_ONLY',
+      fundingVerified:false,identityVerified:false,contactAuthorized:false});
+  }
+  return {status:'SCREENING_ONLY',buyerMatches:[...matched.values()].sort((a,b)=>
+    a.buyerProfileId.localeCompare(b.buyerProfileId)),reviewRequired:true,
+    notVerifiedAsCashBuyers:true,sendAllowed:false,
+    note:'Buyer criteria are unconfirmed self-attestations; independent identity, funding, consent, rights and agent review required'};
 }
-export function executeLocal(profileId,payload={}) {
+export function executeLocal(profileId,payload={},context={}) {
   const profile=getProfile(profileId);
   if(!profile)throw Error('UNKNOWN_PROFILE');
   if(profile.executor!=='DETERMINISTIC_LOCAL')return {status:'WAITING_PROVIDER',reason:'No tested authorized adapter',profileId};
@@ -63,7 +96,7 @@ export function executeLocal(profileId,payload={}) {
   }[id];
   if(strategy)return {status:'SCREENING_ONLY',strategy,...calculateStrategy({strategy,metrics:payload.metrics||{}})};
   if(id==='acquisition.buyer-buy-box-matcher')
-    return {status:'SCREENING_ONLY',buyerMatches:buyerFit(payload.property,payload.buyers),notVerifiedAsCashBuyers:true};
+    return buyerFit(payload.property,payload.buyers,context);
   if(id==='acquisition.for-you-feed-ranker') {
     if(!Array.isArray(payload.properties)||payload.properties.length>500)throw Error('INVALID_FEED');
     const items=payload.properties.filter(p=>p&&p.sourceUseAuthorized===true&&freshness(p.verifiedAt,payload.asOf).verified)
