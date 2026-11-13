@@ -23,7 +23,7 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
       apiKey: secrets.get('PROPERTY_SUPABASE_READ_ONLY_API_KEY'),
       accessToken: secrets.get('PROPERTY_SUPABASE_READ_ONLY_BEARER')
     });
-  } catch (err) {
+  } catch (err: any) {
     return {
       status: 'source_read_denied', reason: err?.code || 'READ_POLICY_UNKNOWN',
       projectRef: 'REDACTED_UNTIL_PINNED', table: propertyTable,
