@@ -3,6 +3,8 @@
  * Used by both syncProperties (user-auth) and workerSync (secret-auth).
  */
 
+import { secrets } from 'base44:runtime';
+
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1564013799925-ab319b078b8f?w=800&q=70";
 
 function mapRow(row: any): any {
@@ -64,12 +66,19 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
   }
   const accessToken = connection.accessToken;
 
+  // Use an explicit project. Selecting projects[0] silently reads the wrong tenant.
+  const projectRef = secrets.get("PROPERTY_SUPABASE_PROJECT_REF");
+  if (!projectRef || !/^[a-z0-9]{20}$/.test(projectRef)) {
+    return { error: "PROPERTY_SUPABASE_PROJECT_REF must be configured securely" };
+  }
   const projectsRes = await fetch("https://api.supabase.com/v1/projects", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+  if (!projectsRes.ok) return { error: "Supabase project authorization failed" };
   const projects = await projectsRes.json();
-  if (!projects.length) return { error: "No Supabase projects found" };
-  const projectRef = projects[0].id;
+  if (!Array.isArray(projects) || !projects.some((p: any) => p.id === projectRef)) {
+    return { error: "Configured property project is not authorized for this connector" };
+  }
 
   const keysRes = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/api-keys`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -78,38 +87,17 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
   const serviceKey = keys.find((k: any) => k.name === "service_role")?.api_key;
   if (!serviceKey) return { error: "Could not retrieve service_role key" };
 
-  // Try known table name first, then fall back to schema discovery
-  const candidateTables = ["distressed_properties", "properties", "listings", "deals", "leads"];
-  let propertyTable: string | null = null;
-
-  for (const candidate of candidateTables) {
-    const probeRes = await fetch(
-      `https://${projectRef}.supabase.co/rest/v1/${candidate}?select=id&limit=1`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
-    );
-    if (probeRes.ok) {
-      propertyTable = candidate;
-      break;
-    }
+  // Fail closed on unexpected tables; never scan unrelated CRM or tenant tables.
+  const propertyTable = secrets.get("PROPERTY_SOURCE_TABLE") || "distressed_properties";
+  if (propertyTable !== "distressed_properties") {
+    return { error: "Only the reviewed distressed_properties source is permitted" };
   }
-
-  if (!propertyTable) {
-    // Fall back to schema discovery via management API
-    const tablesRes = await fetch(
-      `https://api.supabase.com/v1/projects/${projectRef}/database/query/read-only`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ query: "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name" }),
-      }
-    );
-    const tablesData = await tablesRes.json();
-    const tableNames = (tablesData.rows || []).map((r: any) => r.table_name);
-    propertyTable = tableNames.find((t: string) => /propert|lead|listing|deal|distress|foreclosure/i.test(t)) || null;
-  }
-
-  if (!propertyTable) {
-    return { status: "no_source_table", message: "No property tables found in Supabase. Populate Supabase with a distressed_properties table to enable sync.", projectRef };
+  const probeRes = await fetch(
+    `https://${projectRef}.supabase.co/rest/v1/${propertyTable}?select=id&limit=1`,
+    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+  );
+  if (!probeRes.ok) {
+    return { status: "no_source_table", message: "Configured source table unavailable; existing inventory preserved", projectRef, table: propertyTable };
   }
 
   let allRows: any[] = [];
@@ -139,14 +127,11 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
     return { status: "no_valid_rows", message: "Rows found but none mapped to valid properties.", table: propertyTable, rawRowCount: allRows.length };
   }
 
-  const upsertKey = mapped[0]?.source_id ? "source_id" : null;
-  let result;
-  if (upsertKey) {
-    result = await base44.asServiceRole.entities.Property.upsert(mapped, { key: upsertKey });
-  } else {
-    await base44.asServiceRole.entities.Property.deleteMany({ source: "supabase" });
-    result = await base44.asServiceRole.entities.Property.bulkCreate(mapped);
+  // An idempotent source key is mandatory. Never delete an existing inventory on sync.
+  if (mapped.some((p: any) => !p.source_id)) {
+    return { error: "Source identifier missing; inventory preserved", table: propertyTable };
   }
+  const result = await base44.asServiceRole.entities.Property.upsert(mapped, { key: "source_id" });
 
   return {
     status: "synced",
