@@ -2,8 +2,8 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.52";
 import { cleanInventoryData } from "../../shared/inventoryCleanup.ts";
 
 /**
- * Inventory cleanup — repairs missing/dead images, withdraws duplicates and incomplete records.
- * Pass validateImages: true in the request body to also check image URLs for liveness.
+ * Inventory review-only audit. Never withdraws, deletes or modifies listings.
+ * validateImages checks URL syntax only, without fetching untrusted remote hosts.
  */
 export default async function (req: Request) {
   try {
