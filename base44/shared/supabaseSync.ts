@@ -7,7 +7,8 @@ import { secrets } from 'base44:runtime';
 import { screenBrowardSourceRows } from './sourceGate.js';
 import { mapScreenedSourceRow } from './propertySourceMap.js';
 import { reconcilePropertyUpsertReceipt } from './upsertReceipt.js';
-import { buildScopedSourceRead, classifySourceReadFailure } from './scopedSourceRead.js';
+import { buildScopedSourceRead } from './scopedSourceRead.js';
+import { readBoundedSourcePages, classifyPageReadError } from './sourcePageRead.js';
 
 export async function syncSupabaseToEntities(base44: any): Promise<any> {
   // No management API token or project-wide service_role key. Both credentials
@@ -30,33 +31,20 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
       created: 0, updated: 0, deleted: 0, no_records_changed: true
     };
   }
-  const probeRes = await fetch(`${read.endpoint}?select=id&limit=1`, { headers: read.headers });
-  if (!probeRes.ok) {
-    return {
-      status: classifySourceReadFailure(probeRes.status),
-      reason: 'pinned_source_probe_failed', projectRef: read.projectRef, table: read.table,
-      created: 0, updated: 0, deleted: 0, no_records_changed: true
-    };
-  }
-
-  let allRows: any[] = [];
-  let offset = 0;
-  const pageSize = 1000;
-  let hasMore = true;
-  while (hasMore) {
-    const res = await fetch(
-      `${read.endpoint}?select=*&order=id.asc&limit=${pageSize}&offset=${offset}`,
-      { headers: read.headers }
-    );
-    if (!res.ok) {
-      return { status: classifySourceReadFailure(res.status),
-        reason: 'pinned_source_page_failed', projectRef: read.projectRef, table: propertyTable,
-        created: 0, updated: 0, deleted: 0, no_records_changed: true };
-    }
-    const rows = await res.json();
-    allRows = allRows.concat(rows);
-    hasMore = rows.length === pageSize;
-    offset += pageSize;
+  // A bounded read refuses ambiguous partial imports and never falls back to another project.
+  let allRows: any[];
+  try {
+    const source = await readBoundedSourcePages({ endpoint: read.endpoint, headers: read.headers });
+    allRows = source.rows;
+  } catch (err: any) {
+    const reason = classifyPageReadError(err);
+    const status = reason === 'SOURCE_TABLE_NOT_FOUND' ? 'no_source_table'
+      : reason === 'SOURCE_READ_DENIED' ? 'source_read_denied'
+      : reason === 'SOURCE_PAGE_LIMIT_EXCEEDED' ? 'source_page_limit_exceeded'
+      : reason === 'SOURCE_SCHEMA_INVALID' ? 'source_schema_incomplete'
+      : 'source_read_error';
+    return { status, reason, projectRef: read.projectRef, table: read.table,
+      created: 0, updated: 0, deleted: 0, no_records_changed: true };
   }
 
   // Detect incompatible source schema early. The pinned project may exist yet be
