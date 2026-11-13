@@ -1,0 +1,152 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync,rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { BASE_ROLES,PROFILES,summarizeCatalog,getProfile } from '../agent-runtime/catalog.mjs';
+import { openLedger } from '../agent-runtime/ledger.mjs';
+import { executeLocal } from '../agent-runtime/handlers.mjs';
+import { runOne } from '../agent-runtime/runner.mjs';
+const TENANT='strategic-minds-ai',MISSION='property-deal-os:broward-pilot:v1';
+function fixture() {
+  const dir=mkdtempSync(join(tmpdir(),'dealops-sandbox-'));
+  return {dir,path:join(dir,'mirror.sqlite'),close(){rmSync(dir,{force:true,recursive:true});}};
+}
+test('62 functional role definitions, 248 scoped profiles and 12 safe local handlers',()=>{
+  const summary=summarizeCatalog();
+  assert.equal(BASE_ROLES.length,62);
+  assert.equal(PROFILES.length,248);
+  assert.equal(summary.localHandlers,12);
+  assert.equal(summary.liveIndependentAgentsVerified,0);
+  assert.equal(summary.externalProviderAdaptersVerified,0);
+  assert.equal(new Set(PROFILES.map(p=>p.id)).size,248);
+  assert.equal(getProfile('communications.eden-outbound-call@broward').executor,'ADAPTER_REQUIRED');
+});
+test('parcel normalization fails closed on ZIP-only data',()=>{
+  const result=executeLocal('data.parcel-normalizer@broward',{zip:'33301'});
+  assert.equal(result.status,'HOLD_FOR_REVIEW');assert.equal(result.identity.key,null);
+});
+test('matching must never join unrelated property owners by ZIP alone',()=>{
+  const out=executeLocal('data.record-merge-guard@broward',{left:{address:'100 Main Street',city:'Fort Lauderdale',state:'FL',zip:'33301'},right:{address:'200 Main Street',city:'Fort Lauderdale',state:'FL',zip:'33301'}});
+  assert.equal(out.matched,false);assert.equal(out.reviewRequired,true);
+});
+test('parcel match requires jurisdiction agreement and unit cannot be ignored',()=>{
+  const p={apn:'12345',county:'Broward',state:'FL'};
+  assert.equal(executeLocal('data.record-merge-guard@broward',{left:p,right:p}).matched,true);
+  assert.equal(executeLocal('data.record-merge-guard@broward',{left:p,right:{...p,county:'Miami-Dade'}}).matched,false);
+  const a={address:'100 Main St',city:'Fort Lauderdale',state:'FL',zip:'33301',unit:'5'};
+  assert.equal(executeLocal('data.record-merge-guard@broward',{left:a,right:{...a,unit:'6'}}).matched,false);
+});
+test('freshness rejects historical and future verification',()=>{
+  const sample='2026-11-12T01:00:00Z',t='2026-11-12T23:00:00Z';
+  assert.equal(executeLocal('data.data-freshness-monitor@broward',{verifiedAt:sample,asOf:t}).verified,true);
+  assert.equal(executeLocal('data.data-freshness-monitor@broward',{verifiedAt:'2026-09-02T00:00:00Z',asOf:t}).verified,false);
+  assert.equal(executeLocal('data.data-freshness-monitor@broward',{verifiedAt:'2026-12-02T00:00:00Z',asOf:t}).verified,false);
+});
+test('For You agent shows only authorized recent evidence and never presents an offer',()=>{
+  const x=executeLocal('acquisition.for-you-feed-ranker@broward',{asOf:'2026-11-12T23:00:00Z',properties:[
+    {propertyId:'fresh',score:90,verifiedAt:'2026-11-11T18:00:00Z',sourceUseAuthorized:true},
+    {propertyId:'stale',score:99,verifiedAt:'2026-08-11T18:00:00Z',sourceUseAuthorized:true},
+    {propertyId:'unlicensed',score:100,verifiedAt:'2026-11-11T18:00:00Z',sourceUseAuthorized:false}
+  ]});
+  assert.deepEqual(x.items.map(p=>p.propertyId),['fresh']);assert.equal(x.notOffers,true);
+});
+test('cash buyer matching uses buyer criteria, does not verify funds',()=>{
+  const x=executeLocal('acquisition.buyer-buy-box-matcher@broward',{property:{market:'Broward',type:'single_family',estimatedPrice:200000},
+    buyers:[{id:'yes',market:'Broward',types:['single_family'],maxPurchasePrice:250000,buyBoxVerified:true},
+            {id:'no-budget',market:'Broward',types:['single_family'],maxPurchasePrice:150000,buyBoxVerified:true},
+            {id:'unverified',market:'Broward',maxPurchasePrice:250000,buyBoxVerified:false}]});
+  assert.deepEqual(x.buyerMatches.map(y=>y.buyerProfileId),['yes']);
+  assert.equal(x.buyerMatches[0].fundingVerified,false);
+});
+test('only deterministic strategy screening, no automatic assignment',()=>{
+ const r=executeLocal('underwriting.wholesale-assignment-screen@broward',{metrics:{contractPrice:150000,endBuyerPrice:170000,transactionCosts:5500}});
+ assert.equal(r.status,'SCREENING_ONLY');assert.equal(r.metrics.grossSpread,20000);
+ assert.equal(r.metrics.illustrativeNetBeforeTaxes,14500);assert.equal(r.reviewRequired,true);
+});
+test('outbound AI role lacks adapter and cannot call anyone',()=>{
+ const x=executeLocal('communications.eden-outbound-call@broward',{});
+ assert.equal(x.status,'WAITING_PROVIDER');
+});
+test('STOP classification never sends a text',()=>{
+ const x=executeLocal('communications.opt-out-and-dnc-guard@broward',{text:'STOP'});
+ assert.equal(x.classification,'OPT_OUT');assert.equal(x.sendAllowed,false);
+});
+test('local checkpoint persists across DB reopening',()=>{
+ const f=fixture();let db=openLedger(f.path);
+ try {
+   db.checkpoint({tenantId:TENANT,missionId:MISSION,phase:'source-audit',state:'IN_PROGRESS',refSha:'fixture',details:{safe:true}});
+   assert.equal(db.getCheckpoint(TENANT,MISSION).revision,1);
+   db.close();
+   db=openLedger(f.path);
+   assert.equal(db.getCheckpoint(TENANT,MISSION).phase,'source-audit');
+   assert.equal(db.getCheckpoint(TENANT,MISSION).revision,1);
+   db.checkpoint({tenantId:TENANT,missionId:MISSION,phase:'local-test',state:'TESTED'});
+   assert.equal(db.getCheckpoint(TENANT,MISSION).revision,2);
+ }finally{db.close();f.close();}
+});
+test('idempotency prevents duplicate and conflicting work',()=>{
+ const f=fixture();const db=openLedger(f.path);
+ try {
+   const opts={tenantId:TENANT,missionId:MISSION,profileId:'data.parcel-normalizer@broward',idempotencyKey:'fixture:a',payload:{apn:'ABC',county:'Broward',state:'FL'}};
+   const a=db.enqueue(opts),b=db.enqueue(opts);
+   assert.equal(a.id,b.id);assert.equal(b.idempotentReuse,true);
+   assert.throws(()=>db.enqueue({...opts,payload:{apn:'DIFFERENT',county:'Broward',state:'FL'}}),/IDEMPOTENCY_CONFLICT/);
+ }finally{db.close();f.close();}
+});
+test('non-PII local mirror rejects owner contacts and secret data',()=>{
+ const f=fixture();const db=openLedger(f.path);
+ try{
+   const base={tenantId:TENANT,missionId:MISSION,profileId:'data.parcel-normalizer@broward',idempotencyKey:'fixture:b'};
+   assert.throws(()=>db.enqueue({...base,payload:{owner_phone:'+19545551234'}}),/LOCAL_PII/);
+   assert.throws(()=>db.enqueue({...base,payload:{secret:'token-value'}}),/LOCAL_PII/);
+ }finally{db.close();f.close();}
+});
+test('runOne produces a real durable local receipt and no provider send',()=>{
+ const f=fixture();let db=openLedger(f.path);
+ try{
+   db.enqueue({tenantId:TENANT,missionId:MISSION,profileId:'underwriting.wholesale-assignment-screen@broward',idempotencyKey:'fixture:wholesale',payload:{metrics:{contractPrice:100000,endBuyerPrice:130000,transactionCosts:2000}}});
+   const ran=runOne(db,{tenantId:TENANT,missionId:MISSION});
+   assert.equal(ran.state,'COMPLETED');
+   assert.equal(ran.processed,1);assert.equal(ran.sha256.length,64);
+   assert.equal(db.snapshot(TENANT,MISSION).counts.COMPLETED,1);
+   db.close();db=openLedger(f.path);
+   assert.equal(db.snapshot(TENANT,MISSION).receipts.length,1);
+   assert.equal(db.snapshot(TENANT,MISSION).externalSendsVerified,0);
+ }finally{db.close();f.close();}
+});
+test('external adapter role is held, never executed',()=>{
+ const f=fixture();const db=openLedger(f.path);
+ try{
+  db.enqueue({tenantId:TENANT,missionId:MISSION,profileId:'communications.eden-outbound-call@broward',idempotencyKey:'fixture:voice'});
+  const res=runOne(db,{tenantId:TENANT,missionId:MISSION});
+  assert.equal(res.state,'WAITING_PROVIDER');
+  assert.equal(db.snapshot(TENANT,MISSION).counts.WAITING_PROVIDER,1);
+  assert.equal(db.snapshot(TENANT,MISSION).receipts.length,0);
+ }finally{db.close();f.close();}
+});
+test('lease and tenant ownership cannot be spoofed',()=>{
+ const f=fixture();const db=openLedger(f.path);
+ try{
+  const a=db.enqueue({tenantId:TENANT,missionId:MISSION,profileId:'data.parcel-normalizer@broward',idempotencyKey:'fixture:lease',payload:{apn:'999',county:'Broward',state:'FL'}});
+  const work=db.claim(TENANT,MISSION,'worker-one');
+  assert.equal(work.id,a.id);
+  assert.throws(()=>db.complete(TENANT,MISSION,a.id,'worker-two',{ok:true}),/LEASE_OR_TENANT_MISMATCH/);
+  assert.throws(()=>db.complete('other-tenant',MISSION,a.id,'worker-one',{ok:true}),/LEASE_OR_TENANT_MISMATCH/);
+  assert.equal(db.getItem('other-tenant',MISSION,a.id),null);
+  db.complete(TENANT,MISSION,a.id,'worker-one',{ok:true});
+ }finally{db.close();f.close();}
+});
+test('bounded retries eventually block a failing local job',()=>{
+ const f=fixture();const db=openLedger(f.path);
+ try{
+  const a=db.enqueue({tenantId:TENANT,missionId:MISSION,profileId:'data.parcel-normalizer@broward',idempotencyKey:'fixture:fail',maxAttempts:2});
+  for(let i=0;i<2;i++){
+    const work=db.claim(TENANT,MISSION,'test-worker');
+    assert.equal(work.id,a.id);
+    const x=db.fail(TENANT,MISSION,a.id,'test-worker','SYNTHETIC_FAILURE');
+    assert.equal(x.state,i===0?'PENDING':'BLOCKED');
+  }
+  assert.equal(db.snapshot(TENANT,MISSION).counts.BLOCKED,1);
+ }finally{db.close();f.close();}
+});
