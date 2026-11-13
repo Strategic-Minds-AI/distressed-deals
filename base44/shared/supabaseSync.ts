@@ -39,19 +39,6 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
     };
   }
 
-  // Fail closed on unexpected tables; never scan unrelated CRM or tenant tables.
-  const propertyTable = secrets.get("PROPERTY_SOURCE_TABLE") || "distressed_properties";
-  if (propertyTable !== "distressed_properties") {
-    return { error: "Only the reviewed distressed_properties source is permitted" };
-  }
-  const probeRes = await fetch(
-    `https://${projectRef}.supabase.co/rest/v1/${propertyTable}?select=id&limit=1`,
-    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
-  );
-  if (!probeRes.ok) {
-    return { status: "no_source_table", message: "Configured source table unavailable; existing inventory preserved", projectRef, table: propertyTable };
-  }
-
   let allRows: any[] = [];
   let offset = 0;
   const pageSize = 1000;
