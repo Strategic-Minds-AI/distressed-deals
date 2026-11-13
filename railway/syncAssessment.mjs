@@ -17,6 +17,7 @@ export function assessSyncResponse(httpStatus, payload, options = {}) {
     const codes = {
       no_source_table:'SOURCE_NOT_FOUND',
       source_schema_incomplete:'SOURCE_SCHEMA_INCOMPLETE',
+      upsert_receipt_unverified:'UPSERT_RECEIPT_UNVERIFIED',
       no_valid_rows:'NO_VALID_ROWS',
       preview_only:'PREVIEW_ONLY',
       source_rights_unverified:'SOURCE_RIGHTS_UNVERIFIED',
