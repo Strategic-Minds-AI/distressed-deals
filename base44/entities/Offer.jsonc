@@ -41,6 +41,7 @@
     "status": {
       "type": "string",
       "enum": [
+        "Draft",
         "Submitted",
         "Under Review",
         "Counter-Offered",
@@ -48,7 +49,7 @@
         "Rejected",
         "Withdrawn"
       ],
-      "default": "Submitted"
+      "default": "Draft"
     },
     "investor_name": {
       "type": "string"
@@ -84,7 +85,30 @@
         }
       ]
     },
-    "create": {},
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.portal_role": "agent"
+          }
+        },
+        {
+          "user_condition": {
+            "data.portal_role": "investor"
+          }
+        },
+        {
+          "user_condition": {
+            "data.portal_role": "buyer"
+          }
+        }
+      ]
+    },
     "update": {
       "$or": [
         {
