@@ -4,6 +4,7 @@
  */
 
 import { secrets } from 'base44:runtime';
+import { screenBrowardSourceRows } from './sourceGate.js';
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1564013799925-ab319b078b8f?w=800&q=70";
 
@@ -119,9 +120,30 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
     offset += pageSize;
   }
 
-  const mapped = allRows
+  // The source table exists but may contain other counties, old listings or records
+  // with no verified right to use. Do not materialize them into live inventory.
+  const screening = screenBrowardSourceRows(allRows);
+  const freshVerifiedCount = screening.counts.eligible;
+  if (freshVerifiedCount === 0) {
+    return { status: 'no_fresh_verified_rows', projectRef, table: propertyTable,
+      rawRows: allRows.length, counts: screening.counts, created: 0, updated: 0, deleted: 0,
+      no_records_changed: true };
+  }
+  const rightsRef = secrets.get('PROPERTY_SOURCE_RIGHTS_EVIDENCE_REF');
+  if (secrets.get('PROPERTY_SOURCE_RIGHTS_ATTESTED') !== 'true' ||
+      !rightsRef || !/^[A-Za-z0-9._:/-]{12,300}$/.test(rightsRef)) {
+    return { status: 'source_rights_unverified', projectRef, table: propertyTable,
+      rawRows: allRows.length, counts: screening.counts, created: 0, updated: 0, deleted: 0,
+      no_records_changed: true };
+  }
+  if (secrets.get('PROPERTY_SYNC_WRITE_MODE') !== 'staging_approved') {
+    return { status: 'preview_only', projectRef, table: propertyTable,
+      rawRows: allRows.length, counts: screening.counts, created: 0, updated: 0, deleted: 0,
+      no_records_changed: true };
+  }
+  const mapped = screening.eligible
     .map(mapRow)
-    .filter((p: any) => p.title && p.address && p.asking_price != null && p.category);
+    .filter((p: any) => p.title && p.address && p.asking_price > 0 && p.category);
 
   if (!mapped.length) {
     return { status: "no_valid_rows", message: "Rows found but none mapped to valid properties.", table: propertyTable, rawRowCount: allRows.length };
@@ -135,7 +157,11 @@ export async function syncSupabaseToEntities(base44: any): Promise<any> {
 
   return {
     status: "synced",
+    projectRef,
     table: propertyTable,
+    freshVerifiedCount: mapped.length,
+    sourceRightsConfirmed: true,
+    deleted: 0,
     rawRows: allRows.length,
     mapped: mapped.length,
     created: result.created || result.length || 0,
