@@ -10,11 +10,11 @@ const ID=/^[a-zA-Z0-9:._-]{3,140}$/;
 export function auditSourceSnapshot(ledger,{tenantId,missionId,snapshotId,asOf,rows}={}){
   if(!Array.isArray(rows)||rows.length>200||!ID.test(snapshotId||'')||!Number.isFinite(Date.parse(asOf||'')))
     throw Error('INVALID_SOURCE_AUDIT_INPUT');
+  if(rows.some(row=>!row||typeof row!=='object'||Object.keys(row).some(k=>!ALLOWED.has(k))||!ID.test(row.propertyId||'')))
+    throw Error('SOURCE_SNAPSHOT_UNEXPECTED_FIELD_OR_ID');
   let recent=0,stale=0,missing=0,queued=0,reused=0,completed=0;
   const digest=createHash('sha256').update(JSON.stringify({snapshotId,asOf,rows})).digest('hex');
   for(const row of rows){
-    if(!row||typeof row!=='object'||Object.keys(row).some(k=>!ALLOWED.has(k))||!ID.test(row.propertyId||''))
-      throw Error('SOURCE_SNAPSHOT_UNEXPECTED_FIELD_OR_ID');
     const result=executeLocal('data.data-freshness-monitor@broward',{verifiedAt:row.verifiedAt||'',asOf});
     if(result.verified)recent++;
     else if(result.reason==='MISSING_SOURCE_TIMESTAMP')missing++;
