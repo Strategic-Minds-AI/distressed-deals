@@ -96,6 +96,9 @@ test('For You quarantines duplicate folios and deterministically ranks nonduplic
   const third={...feedProperty,propertyId:'sorted',parcelId:'5042-00-3000',score:90};
   const r=rank([third,duplicate,second,feedProperty]);
   assert.deepEqual(r.items.map(x=>x.propertyId),['sorted','unique']);
+  // Even with different folios, reused propertyId must be quarantined.
+  const repeatedId=rank([feedProperty,{...feedProperty,parcelId:'other-parcel'}]);
+  assert.deepEqual(repeatedId.items,[]);
 });
 const buyerAsOf='2026-11-13T08:00:00Z';
 const buyerProperty={tenantId:TENANT,market:'Broward',county:'Broward',state:'FL',parcelId:'123-0001',
