@@ -43,13 +43,59 @@ test('freshness rejects historical and future verification',()=>{
   assert.equal(executeLocal('data.data-freshness-monitor@broward',{verifiedAt:'2026-09-02T00:00:00Z',asOf:t}).verified,false);
   assert.equal(executeLocal('data.data-freshness-monitor@broward',{verifiedAt:'2026-12-02T00:00:00Z',asOf:t}).verified,false);
 });
-test('For You agent shows only authorized recent evidence and never presents an offer',()=>{
-  const x=executeLocal('acquisition.for-you-feed-ranker@broward',{asOf:'2026-11-12T23:00:00Z',properties:[
-    {propertyId:'fresh',score:90,verifiedAt:'2026-11-11T18:00:00Z',sourceUseAuthorized:true},
-    {propertyId:'stale',score:99,verifiedAt:'2026-08-11T18:00:00Z',sourceUseAuthorized:true},
-    {propertyId:'unlicensed',score:100,verifiedAt:'2026-11-11T18:00:00Z',sourceUseAuthorized:false}
-  ]});
-  assert.deepEqual(x.items.map(p=>p.propertyId),['fresh']);assert.equal(x.notOffers,true);
+const feedAsOf='2026-11-13T09:00:00Z';
+const feedContext={tenantId:TENANT,asOf:feedAsOf};
+const feedBox={id:'buyer-research',tenantId:TENANT,market:'Broward',types:['single_family'],
+  minPurchasePrice:100000,maxPurchasePrice:300000,buyBoxVerified:true,
+  buyBoxVerifiedAt:'2026-11-12T09:00:00Z'};
+const feedProperty={propertyId:'feed-1',tenantId:TENANT,state:'FL',county:'Broward',
+  parcelId:'5042-00-1000',market:'Broward',type:'single_family',
+  estimatedPrice:210000,score:87,verifiedAt:'2026-11-12T11:00:00Z',
+  sourceUseAuthorized:true,rightsEvidenceId:'evidence-attestation-fixture',
+  sourceUrl:'https://example.gov/fixtures/5042001000'};
+const rank=(properties,box=feedBox,context=feedContext)=>executeLocal(
+  'acquisition.for-you-feed-ranker@broward',{properties,buyBox:box},context);
+test('For You research returns only tenant-scoped evidence-gated parcels with a matching buy box',()=>{
+  const r=rank([feedProperty,{...feedProperty,propertyId:'older',parcelId:'not-same',
+    verifiedAt:'2026-09-01T00:00:00Z'},
+    {...feedProperty,propertyId:'other-tenant',parcelId:'not-same-2',tenantId:'other'}]);
+  assert.deepEqual(r.items.map(x=>x.propertyId),['feed-1']);
+  assert.equal(r.tenantScoped,true);assert.equal(r.sendAllowed,false);
+  assert.equal(r.notVerifiedAvailable,true);assert.equal(r.notOffers,true);
+  assert.equal(r.items[0].listingAvailabilityVerified,false);
+});
+test('For You refuses missing or forged ledger tenant context and unverified buy box',()=>{
+  for(const ctx of [{},{tenantId:'other',asOf:feedAsOf},{tenantId:TENANT,asOf:'invalid'}]){
+    const r=rank([feedProperty],feedBox,ctx);
+    assert.equal(r.status,'HOLD_FOR_REVIEW');assert.deepEqual(r.items,[]);
+  }
+  for(const b of [null,{...feedBox,tenantId:'other'},
+    {...feedBox,buyBoxVerified:false},{...feedBox,buyBoxVerifiedAt:'2026-01-01T00:00:00Z'},
+    {...feedBox,buyBoxVerifiedAt:'2026-11-15T00:00:00Z'},
+    {...feedBox,maxPurchasePrice:20000,minPurchasePrice:30000}]) {
+    const r=rank([feedProperty],b);
+    assert.equal(r.status,'HOLD_FOR_REVIEW');assert.deepEqual(r.items,[]);
+  }
+});
+test('For You excludes missing rights, foreign counties, stale or future data, and unpriced rows',()=>{
+  const cases=[
+    {sourceUseAuthorized:false},{rightsEvidenceId:''},{sourceUrl:'http://example.com'},
+    {county:'Palm Beach'},{state:'GA'},{parcelId:''},
+    {verifiedAt:'2026-07-01T00:00:00Z'},
+    {verifiedAt:'2026-11-20T00:00:00Z'},{estimatedPrice:null},
+    {estimatedPrice:400000},{type:'condo'},{score:'95'},{score:101}
+  ];
+  for(const [i,delta] of cases.entries()){
+    const r=rank([{...feedProperty,...delta,propertyId:'negative-'+i}]);
+    assert.deepEqual(r.items,[],JSON.stringify(delta));
+  }
+});
+test('For You quarantines duplicate folios and deterministically ranks nonduplicated safe rows',()=>{
+  const duplicate={...feedProperty,propertyId:'duplicate',score:99};
+  const second={...feedProperty,propertyId:'unique',parcelId:'5042-00-2000',score:90};
+  const third={...feedProperty,propertyId:'sorted',parcelId:'5042-00-3000',score:90};
+  const r=rank([third,duplicate,second,feedProperty]);
+  assert.deepEqual(r.items.map(x=>x.propertyId),['sorted','unique']);
 });
 const buyerAsOf='2026-11-13T08:00:00Z';
 const buyerProperty={tenantId:TENANT,market:'Broward',county:'Broward',state:'FL',parcelId:'123-0001',
