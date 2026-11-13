@@ -6,6 +6,7 @@ import {
   ImageOff, Copy, FileX, RefreshCw, ShieldCheck,
 } from "lucide-react";
 import { useLiveProperties } from "@/hooks/useLiveProperties";
+import { auditPropertyCandidates } from "../../base44/shared/propertyIdentity.js";
 import DistressedPropertyCard from "@/components/property/DistressedPropertyCard";
 
 export default function InventoryCleaner() {
@@ -18,22 +19,15 @@ export default function InventoryCleaner() {
   const [availReport, setAvailReport] = useState(null);
   const [error, setError] = useState(null);
 
-  // Deterministic client-side mirror of inventory health
+  // Preview possible duplicates without treating ZIP, street or building matches as identity.
   const issues = useMemo(() => {
-    const dupes = [];
-    const seen = new Map();
-    const noImages = [];
-    const incomplete = [];
-    (properties || []).forEach((p) => {
-      const key = `${(p.address || "").toLowerCase().replace(/[^a-z0-9]/g, "")}|${(p.city || "").toLowerCase()}`;
-      if (key && key !== "|") {
-        if (seen.has(key)) dupes.push(p);
-        else seen.set(key, p);
-      }
-      if (!Array.isArray(p.images) || p.images.filter(Boolean).length === 0) noImages.push(p);
-      if (!p.title || !p.address || p.asking_price == null || !p.category) incomplete.push(p);
-    });
-    return { dupes, noImages, incomplete };
+    const records = properties || [];
+    const audit = auditPropertyCandidates(records);
+    const reviewIds = new Set(audit.pairs.map(pair => pair.rightId));
+    const dupes = records.filter(p => reviewIds.has(String(p.id)));
+    const noImages = records.filter(p => !Array.isArray(p.images) || !p.images.some(Boolean));
+    const incomplete = records.filter(p => !p.title || !p.address || p.asking_price == null || !p.category);
+    return { dupes, candidateCount: audit.totalCandidates, ambiguousCount: audit.ambiguousCandidates, noImages, incomplete };
   }, [properties]);
 
   const runAvailabilityCheck = async () => {
@@ -55,7 +49,7 @@ export default function InventoryCleaner() {
     if (validate) setValidating(true); else setRunning(true);
     setError(null);
     try {
-      const res = await base44.functions.invoke("cleanInventory", { mode: "clean", validateImages: validate });
+      const res = await base44.functions.invoke("cleanInventory", { mode: "audit", validateImages: validate });
       setReport(res.data);
       refresh();
     } catch (e) {
@@ -68,8 +62,8 @@ export default function InventoryCleaner() {
 
   const health = [
     { label: "Total Listings", value: properties.length, icon: Database, tone: "text-foreground" },
-    { label: "Duplicate Addresses", value: issues.dupes.length, icon: Copy, tone: issues.dupes.length ? "text-amber-600" : "text-emerald-600" },
-    { label: "Missing Images", value: issues.noImages.length, icon: ImageOff, tone: issues.noImages.length ? "text-rose-600" : "text-emerald-600" },
+    { label: "Review Candidates", value: issues.candidateCount, icon: Copy, tone: issues.candidateCount ? "text-amber-600" : "text-emerald-600" },
+    { label: "Missing Image Links", value: issues.noImages.length, icon: ImageOff, tone: issues.noImages.length ? "text-rose-600" : "text-emerald-600" },
     { label: "Incomplete Records", value: issues.incomplete.length, icon: FileX, tone: issues.incomplete.length ? "text-rose-600" : "text-emerald-600" },
   ];
 
@@ -81,14 +75,14 @@ export default function InventoryCleaner() {
         </div>
         <div>
           <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">Inventory Cleaner</h1>
-          <p className="text-muted-foreground text-sm">Deterministic cleanup keeps your deal inventory perfectly clean.</p>
+          <p className="text-muted-foreground text-sm">Conservative review identifies issues without altering property listings.</p>
         </div>
       </div>
 
       {/* Live status */}
       <div className="flex items-center gap-2 mt-4 mb-6 text-xs text-emerald-600">
         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        Live auto-refresh active — inventory updates in real time
+        Loaded inventory snapshot; audit does not change listing status
       </div>
 
       {/* Health cards */}
@@ -113,7 +107,7 @@ export default function InventoryCleaner() {
           className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-          {running ? "Cleaning…" : "Clean Now"}
+          {running ? "Auditing…" : "Audit Inventory"}
         </button>
         <button
           onClick={() => runClean(true)}
@@ -121,7 +115,7 @@ export default function InventoryCleaner() {
           className="inline-flex items-center gap-2 border border-border bg-card text-foreground px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-muted transition-colors disabled:opacity-50"
         >
           {validating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-          {validating ? "Validating images…" : "Validate Image URLs"}
+          {validating ? "Checking URL format…" : "Check Image URL Format"}
         </button>
         <button
           onClick={runAvailabilityCheck}
@@ -150,17 +144,17 @@ export default function InventoryCleaner() {
         <div className="bg-card border border-border rounded-2xl p-5 mb-8">
           <div className="flex items-center gap-2 mb-4">
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            <h2 className="font-display text-lg font-semibold text-foreground">Cleanup Report</h2>
+            <h2 className="font-display text-lg font-semibold text-foreground">Inventory Audit Report</h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <ReportStat label="Listings scanned" value={report.total} />
-            <ReportStat label="Images added" value={report.imagesFixed} />
-            <ReportStat label="Dead images replaced" value={report.deadImagesReplaced} />
-            <ReportStat label="Duplicates withdrawn" value={report.duplicatesWithdrawn} />
-            <ReportStat label="Incomplete withdrawn" value={report.incompleteWithdrawn} />
-            <ReportStat label="Records updated" value={report.updated} />
-            <ReportStat label="Images validated" value={report.validated} />
-            <ReportStat label="Status" value="Complete" ok />
+            <ReportStat label="Missing image links" value={report.missingImageCandidates} />
+            <ReportStat label="Invalid image URLs" value={report.invalidImageUrls} />
+            <ReportStat label="Duplicate review pairs" value={report.duplicateCandidates} />
+            <ReportStat label="Incomplete for review" value={report.incompleteCandidates} />
+            <ReportStat label="Records changed" value={report.updated} />
+            <ReportStat label="URL formats checked" value={report.urlFormatsChecked} />
+            <ReportStat label="Mode" value={report.mode || "REVIEW_ONLY"} />
           </div>
         </div>
       )}
@@ -202,7 +196,7 @@ export default function InventoryCleaner() {
       {issues.dupes.length > 0 && (
         <div className="mb-8">
           <h2 className="font-display text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Copy className="w-4 h-4 text-amber-600" /> Detected Duplicates ({issues.dupes.length})
+            <Copy className="w-4 h-4 text-amber-600" /> Possible Duplicate Review ({issues.candidateCount})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {issues.dupes.slice(0, 8).map((p, i) => (
