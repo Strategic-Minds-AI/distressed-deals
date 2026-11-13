@@ -5,6 +5,7 @@ import { base44 } from "@/api/base44Client";
 import { useLiveProperties } from "@/hooks/useLiveProperties";
 import DistressedPropertyCard from "@/components/property/DistressedPropertyCard";
 import SwipeableRow from "@/components/property/SwipeableRow";
+import { inspectPropertyForReview } from "@/lib/propertyReview";
 
 const CATEGORIES = ["All", "Pre-Foreclosure", "Foreclosure", "Short Sale", "Bank-Owned (REO)", "Auction", "Tax Lien", "Probate", "Distressed Sale"];
 const SORTS = [
@@ -58,7 +59,8 @@ export default function BrowseDeals() {
     return q;
   }, [category, search, minRoi, stateFilter, cityFilter]);
 
-  const { items: properties, loading } = useLiveProperties(query, { sort, limit: 100 });
+  const { items: properties, loading, error, refresh } = useLiveProperties(query, { sort, limit: 100 });
+  const sourceReadyCount = properties.filter(p => inspectPropertyForReview(p).sourceReadyForAgentReview).length;
 
   const rows = useMemo(() => {
     if (category !== "All") return [{ label: category, items: properties }];
@@ -70,8 +72,9 @@ export default function BrowseDeals() {
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">Browse Distressed Deals</h1>
-        <p className="text-muted-foreground text-sm mt-1">{properties.length} active opportunities with full investment metrics.</p>
+        <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">Distressed Property Research</h1>
+        <p className="text-muted-foreground text-sm mt-1">{properties.length} historical property signals for review. {sourceReadyCount} have complete source evidence in this interface.</p>
+        <div role="note" className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">Records may be stale or inaccurate. This is not an available-for-sale list, a title report, seller authorization, or permission to call or text. Licensed agents must verify source rights, parcel identity and current status before action.</div>
       </div>
 
       {/* Search + sort */}
@@ -158,10 +161,15 @@ export default function BrowseDeals() {
         <div className="flex justify-center py-24">
           <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
         </div>
+      ) : error ? (
+        <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 p-5 text-sm text-rose-900">
+          Property feed is unavailable. No availability is implied.
+          <button type="button" onClick={refresh} className="ml-3 underline font-semibold">Retry loading</button>
+        </div>
       ) : properties.length === 0 ? (
         <div className="text-center py-24 text-muted-foreground">
           <div className="text-5xl mb-3">🏚️</div>
-          <p className="font-display text-lg font-semibold text-foreground">No deals match your filters</p>
+          <p className="font-display text-lg font-semibold text-foreground">No property records match your filters</p>
         </div>
       ) : (
         <div className="space-y-8">
