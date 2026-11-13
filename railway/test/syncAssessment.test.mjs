@@ -34,3 +34,8 @@ test('unknown/preview statuses and network errors never report success',()=>{
   assert.equal(assessSyncResponse(500,good()).code,'HTTP_ERROR');
   assert.equal(assessSyncResponse(200,null).code,'INVALID_RESPONSE');
 });
+
+test('incompatible real source schema with missing parcel/county is a hard failure',()=>{
+ const x=assessSyncResponse(200,{status:'source_schema_incomplete',missingColumns:['county','parcel_id'],projectRef:PROPERTY_PROJECT_REF,table:PROPERTY_TABLE});
+ assert.equal(x.healthy,false);assert.equal(x.code,'SOURCE_SCHEMA_INCOMPLETE');
+});
