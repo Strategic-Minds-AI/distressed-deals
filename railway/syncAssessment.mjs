@@ -19,6 +19,7 @@ export function assessSyncResponse(httpStatus, payload, options = {}) {
       source_read_denied:'SOURCE_READER_DENIED',
       source_read_error:'SOURCE_READER_ERROR',
       source_schema_incomplete:'SOURCE_SCHEMA_INCOMPLETE',
+      source_page_limit_exceeded:'SOURCE_PAGE_LIMIT_EXCEEDED',
       upsert_receipt_unverified:'UPSERT_RECEIPT_UNVERIFIED',
       no_valid_rows:'NO_VALID_ROWS',
       preview_only:'PREVIEW_ONLY',
