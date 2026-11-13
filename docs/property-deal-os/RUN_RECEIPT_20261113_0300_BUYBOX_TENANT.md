@@ -1,0 +1,32 @@
+# Property Deal OS | 2026-11-13 03:00 ET continuation receipt
+
+Canonical mission `6af66728667d5d2261bdd064`, idempotency `property-deal-os:broward-pilot:v1`. **Reversible feature-branch engineering only; release blocked.**
+
+## Rehydration
+- Read master contract `docs/property-deal-os/MASTER_AUTONOMOUS_BUILD_PROMPT.md`, blob SHA `2707a24555bdd9fb8e8397783c0a08343520263a`, and `AGENT_RUNTIME_STATUS.md`, blob SHA `6c820b5b375f072a7b83b2ffcafb90d7c118263a`, before coding.
+- Reused original repo `Strategic-Minds-AI/distressed-deals`, branch `feat/property-deal-os-safe-sync-20261112`; original head `5feeaca5ea9401b00deb174b98e5f4f6de409105`. No second repo, plugin, worker, queue or automation.
+- X1 JARVIS-COMMAND worker heartbeat advertises `ollama`, `ollama_models`, `ollama_chat`, `docker` but **not** Property Deal OS coding capability. Direct GitHub and existing connected desktop were used; fleet dispatch remains blocked.
+
+## Actual committed code
+- `e8bd7894c09e1e15e6b7053bf0fcb300c9e930b7`: replace permissive buyer buy-box matching in `dealops-mcp/agent-runtime/handlers.mjs`. Matching now requires local ledger tenant context, same-tenant property and buyer criteria, Florida/Broward parcel, current source timestamp, source-rights evidence **attestation**, specified market/property type/positive price, and nonexpired buyer criteria. Missing/unverified fields hold for review, no fabricated cash-buyer or outreach authorization. Deduplicates by buyer profile ID.
+- `bbc5489f7f99fe0d5314f29737b7dd64cc6485f5`: pass ledger tenant/mission and actual execution time into deterministic handler from `dealops-mcp/agent-runtime/runner.mjs`, rather than treating payload-supplied tenant or date as trusted.
+- **Exact tested implementation SHA:** `bb38c4259b1b9d3cfef26e86bde8139671e5c047`: expand `dealops-mcp/test/agent-runtime.test.mjs` with positive, cross-tenant, forged/missing context, unverified/stale source, missing price/folio, expired/conflicting buy-box and duplicate-ID negative cases. Each of the three updated source files had exact GitHub content readback after its commit.
+- `f3eb0755a85c28dd6696f00541160c07b9c7871f`: add real public-source discovery route and unverified November 23 auction parcel *research candidates* to `docs/property-deal-os/BROWARD_SOURCE_REGISTER.md`. None is accepted as a verified deal, buyer or outreach target.
+
+## Deterministic execution evidence
+- Connected device: `JARVIS-COMMAND` Windows Node `v24.14.0`. Exact GitHub source + test dependencies staged under `C:\_Strategic_Minds_AI_OS\02_Active_Builds\PROPERTY_DEAL_OS\hourly_20261113_0300_tests\dealops-mcp`; no live database or external contact data copied.
+- Local Agent runtime suite: 21 pass, 0 fail. Full five-file MCP/communications/agent/source-audit/underwrite regression: **47 tests PASS, 0 FAIL**, no skips, test log and PASS exit marker read back at `...\dealops-mcp\full-regression.log` and `full-regression.exit`. SQLite experimental-warning remains.
+- Branch-preview Vercel deployment `dpl_DFwsmYuHbxfnKk7N7n9h435L5a2N` reported `READY` at **exact implementation SHA** `bb38c4259b1b9d3cfef26e86bde8139671e5c047`, `target=null` (preview). Inspector: https://vercel.com/strategic-minds-advisory/distressed-deals/DFwsmYuHbxfnKk7N7n9h435L5a2N . Frontend readiness does not certify the local buy-box code as live authenticated production functionality.
+
+## Live operational readback and blockers
+- Universal Property Intelligence Supabase `fwtchbsebygwifmmqhur`, **read-only SQL**: `properties`: 791 total, 657 Florida, 0 verified within 30 days, latest 2026-09-08 UTC; `distressed_properties`: 15 total, 2 Florida, 0 verified within 30 days, latest NULL. `investor_leads` schema exposed no verified buy-box, buyer criteria range or tenant-scoped funds fields; new matcher remains fixture-driven only.
+- Railway existing production project `1cbac9f8-37e3-4398-8971-4ce20d1fcf2d`, worker service `3019d420-5c44-44b9-9873-fc1d51837498` deployment `033e6051-b474-4a59-a387-ec4a6992b3e0` still runs **October 2** commit `5fb651ed`. 2026-11-13 08:00Z worker log again returned "No Supabase tables found yet"; real productive sync: **0/2**. Unaccepted production source staging patch is still pinned to unrelated older `ff87da7...`. It was **not accepted, redeployed, restarted or changed**.
+- Broward Tax Collector published a public delinquent-file download route. Secondary sites report November 23, 2026 auction candidates, but the official auction site returned 403 to read-only browsing. Do not bypass; no source license, valid full addresses, title, current sale status or seller permission verified. **Fresh eligible Broward property count: 0/5.**
+- Independent `VISION_CORTEX` validator could not run: provider HTTP **402 integration limit**. Alternative second-pass returned input validation 422; preexisting X1 Apex Guardian catalog is unrelated and cannot sign this SHA. Required independent release approval **UNKNOWN/BLOCKED**.
+- RLS tenant-negative provider testing, real buyer verification, authenticated hosted MCP, agent browser journey, two productive ingestion cycles, consented provider canaries, rollback and production target approval are **NOT TESTED / NOT PASSED**.
+
+## Safety/cost/rollback
+No new paid service, ads, Supabase write, migration, production release, worker restart, autonomous scheduler, external email, SMS, AI call, seller contact, offer, auction bid or financial transaction. Incremental expenditure authorized/executed by this run **$0**; existing provider charges not audited. Rollback is revert the three feature-branch code commits; do not touch live production. Caller-provided source/rights flags and buyer self-attestation are screening inputs, not independently certified rights or funded buyer evidence.
+
+## Next single highest-impact checkpoint
+Retrieve a legitimate current Broward delinquent/auction feed using the County's published download/request path **with documented automated access and reuse rights**; cross-check five parcels against official source, complete addresses and current status; hold for agent review, no outreach. In parallel scope Supabase JWT/RLS and no-destructive staging write receipts to existing project and prepare two productive existing-worker cycles, only after five real source records and authorization. Keep fleet dispatch marked blocked; use existing direct tool route. Do not promote production until full Guardian and owner approval.
