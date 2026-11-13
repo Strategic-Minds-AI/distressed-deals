@@ -16,6 +16,7 @@ export function assessSyncResponse(httpStatus, payload, options = {}) {
   if (payload.status !== 'synced') {
     const codes = {
       no_source_table:'SOURCE_NOT_FOUND',
+      source_schema_incomplete:'SOURCE_SCHEMA_INCOMPLETE',
       no_valid_rows:'NO_VALID_ROWS',
       preview_only:'PREVIEW_ONLY',
       source_rights_unverified:'SOURCE_RIGHTS_UNVERIFIED',
