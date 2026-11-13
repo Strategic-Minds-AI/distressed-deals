@@ -150,6 +150,22 @@
       "type": "string",
       "format": "date-time",
       "description": "Last time availability was verified by the validation system"
+    },
+    "county": {
+      "type": "string",
+      "description": "Source-verified county; Broward pilot only."
+    },
+    "parcel_id": {
+      "type": "string",
+      "description": "Jurisdiction-verified parcel/folio identifier; not a ZIP-level merge key."
+    },
+    "source_project_ref": {
+      "type": "string",
+      "description": "Explicit approved Supabase project identity."
+    },
+    "source_table": {
+      "type": "string",
+      "description": "Explicit approved Supabase source table."
     }
   },
   "required": [
