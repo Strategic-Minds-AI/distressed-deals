@@ -5,7 +5,8 @@
   "description": "Background worker for DistressDeals — syncs Supabase properties every 2 hours",
   "main": "worker.js",
   "scripts": {
-    "start": "node worker.js"
+    "start": "node worker.js",
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "node-cron": "^3.0.3",
