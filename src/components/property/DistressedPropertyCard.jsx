@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { Heart, Bed, Bath, Square, MapPin, TrendingUp, Wrench, AlertTriangle, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import SmartImage from "@/components/common/SmartImage";
+import { inspectPropertyForReview } from "@/lib/propertyReview";
 import {
   formatCurrency,
   maxOffer70,
@@ -11,9 +11,9 @@ import {
 } from "@/lib/investment";
 
 export default function DistressedPropertyCard({ property, onClick, index = 0, isWatched, onToggleWatch }) {
-  const [imgIdx, setImgIdx] = useState(0);
-  const maxOffer = maxOffer70(property.arv, property.estimated_repair_cost);
-  const profit = property.arv - property.asking_price - property.estimated_repair_cost;
+  const review = inspectPropertyForReview(property);
+  const maxOffer = review.hasInvestmentInputs ? maxOffer70(property.arv, property.estimated_repair_cost) : null;
+  const profit = review.hasInvestmentInputs ? property.arv - property.asking_price - property.estimated_repair_cost : null;
 
   return (
     <motion.div
@@ -25,19 +25,26 @@ export default function DistressedPropertyCard({ property, onClick, index = 0, i
     >
       {/* Image */}
       <div className="relative h-44 overflow-hidden">
-        <SmartImage
-          src={property.images?.[imgIdx] || property.images?.[0]}
-          alt={property.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+        {review.photoUrl ? (
+          <SmartImage
+            src={review.photoUrl}
+            alt={property.title || "Property photo"}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-slate-800 text-slate-200 text-xs text-center px-5">
+            <MapPin className="w-8 h-8" />
+            <span>Photo not licensed for display</span>
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
         <div className="absolute top-2.5 left-2.5 flex gap-1.5 flex-wrap max-w-[85%]">
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[property.category] || "bg-slate-100 text-slate-700"}`}>
             {property.category}
           </span>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[property.status] || ""}`}>
-            {property.status}
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
+            {review.sourceReadyForAgentReview ? "Source review complete" : "Verification required"}
           </span>
         </div>
 
@@ -53,7 +60,7 @@ export default function DistressedPropertyCard({ property, onClick, index = 0, i
 
         <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-end justify-between">
           <span className="text-white font-display font-bold text-xl drop-shadow">
-            {formatCurrency(property.asking_price)}
+            {typeof property.asking_price === "number" && Number.isFinite(property.asking_price) && property.asking_price > 0 ? formatCurrency(property.asking_price) : "Price unverified"}
           </span>
           {property.auction_date && (
             <span className="bg-rose-600 text-white text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
@@ -75,10 +82,10 @@ export default function DistressedPropertyCard({ property, onClick, index = 0, i
 
         {/* Investment metrics grid */}
         <div className="grid grid-cols-2 gap-2 mb-3">
-          <Metric label="ARV" value={formatCurrency(property.arv)} />
-          <Metric label="Repairs" value={formatCurrency(property.estimated_repair_cost)} icon={Wrench} />
-          <Metric label="Max Offer (70%)" value={formatCurrency(maxOffer)} accent />
-          <Metric label="Proj. Profit" value={formatCurrency(profit)} accent />
+          <Metric label="ARV" value={review.hasInvestmentInputs ? formatCurrency(property.arv) : "Needs review"} />
+          <Metric label="Repairs" value={review.hasInvestmentInputs ? formatCurrency(property.estimated_repair_cost) : "Needs review"} icon={Wrench} />
+          <Metric label="Max Offer (70%)" value={review.hasInvestmentInputs ? formatCurrency(maxOffer) : "Needs review"} accent />
+          <Metric label="Proj. Profit" value={review.hasInvestmentInputs ? formatCurrency(profit) : "Needs review"} accent />
         </div>
 
         {/* ROI bar */}
@@ -87,12 +94,12 @@ export default function DistressedPropertyCard({ property, onClick, index = 0, i
             <span className="text-muted-foreground flex items-center gap-1">
               <TrendingUp className="w-3 h-3" /> Projected ROI
             </span>
-            <span className="font-semibold text-emerald-600">{property.projected_roi}%</span>
+            <span className="font-semibold text-amber-700">{review.hasInvestmentInputs && Number.isFinite(property.projected_roi) ? `${property.projected_roi}% (estimate)` : "Unverified"}</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full"
-              style={{ width: `${Math.min(property.projected_roi, 100)}%` }}
+              style={{ width: `${review.hasInvestmentInputs && Number.isFinite(property.projected_roi) ? Math.max(0, Math.min(property.projected_roi, 100)) : 0}%` }}
             />
           </div>
         </div>
@@ -105,7 +112,7 @@ export default function DistressedPropertyCard({ property, onClick, index = 0, i
           {property.baths > 0 && (
             <span className="flex items-center gap-1"><Bath className="w-3.5 h-3.5" />{property.baths}</span>
           )}
-          <span className="flex items-center gap-1"><Square className="w-3.5 h-3.5" />{property.sqft.toLocaleString()}</span>
+          <span className="flex items-center gap-1"><Square className="w-3.5 h-3.5" />{Number.isFinite(property.sqft) ? property.sqft.toLocaleString() : "Size unverified"}</span>
           <span className={`ml-auto font-medium ${CONDITION_COLORS[property.condition_grade] || ""}`}>
             {property.condition_grade?.split(" - ")[0]}
           </span>
