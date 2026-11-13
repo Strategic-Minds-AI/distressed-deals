@@ -59,3 +59,11 @@ test('scoped source read denial and provider failure are not healthy',()=>{
  assert.equal(error.healthy,false);
  assert.equal(error.code,'SOURCE_READER_ERROR');
 });
+
+
+test('bounded Supabase source overflow is an explicit worker alert',()=>{
+ const result=assessSyncResponse(200,{status:'source_page_limit_exceeded',
+    projectRef:PROPERTY_PROJECT_REF,table:PROPERTY_TABLE,created:0,updated:0,deleted:0});
+ assert.equal(result.healthy,false);
+ assert.equal(result.code,'SOURCE_PAGE_LIMIT_EXCEEDED');
+});
