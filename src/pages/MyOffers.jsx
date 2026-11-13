@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { formatCurrency } from "@/lib/investment";
 
 const STATUS_COLORS = {
+  "Draft": "bg-slate-100 text-slate-700",
   "Submitted": "bg-blue-100 text-blue-700",
   "Under Review": "bg-amber-100 text-amber-700",
   "Counter-Offered": "bg-purple-100 text-purple-700",
@@ -39,20 +40,20 @@ export default function MyOffers() {
   }
 
   const totalActive = offers.filter(o => ["Submitted", "Under Review", "Counter-Offered"].includes(o.status)).length;
-  const totalAmount = offers.filter(o => o.status !== "Withdrawn" && o.status !== "Rejected").reduce((s, o) => s + (o.amount || 0), 0);
+  const totalAmount = offers.filter(o => !["Draft", "Withdrawn", "Rejected"].includes(o.status)).reduce((s, o) => s + (o.amount || 0), 0);
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto">
       <div className="mb-6">
         <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">My Offers</h1>
-        <p className="text-muted-foreground text-sm mt-1">{totalActive} active · {formatCurrency(totalAmount)} in play</p>
+        <p className="text-muted-foreground text-sm mt-1">{totalActive} submitted/reviewed · {offers.filter(o => o.status === "Draft").length} internal drafts · {formatCurrency(totalAmount)} reported in review</p>
       </div>
 
       {offers.length === 0 ? (
         <div className="text-center py-24 text-muted-foreground">
           <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
-          <p className="font-display text-lg font-semibold text-foreground">No offers yet</p>
-          <p className="text-sm mt-1">Submit an offer on any deal to track it here.</p>
+          <p className="font-display text-lg font-semibold text-foreground">No internal drafts or offers yet</p>
+          <p className="text-sm mt-1">Prepare a nonbinding draft after reviewing the property evidence. Saving does not contact a seller.</p>
           <a href="/portal/browse" className="inline-flex items-center gap-2 mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium hover:opacity-90 transition-opacity duration-150">
             Browse Deals <ArrowRight className="w-4 h-4" />
           </a>
@@ -64,7 +65,7 @@ export default function MyOffers() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-display font-semibold text-foreground truncate">{o.property_title}</h3>
-                  <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_COLORS[o.status] || ""}`}>{o.status}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_COLORS[o.status] || ""}`}>{o.status === "Draft" ? "Internal draft (not sent)" : o.status}</span>
                 </div>
                 <p className="text-xs text-muted-foreground truncate mb-2">{o.property_address}</p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
